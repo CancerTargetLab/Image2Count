@@ -3,6 +3,7 @@ import random
 import torch
 import os
 from scipy.stats import pearsonr, spearmanr, kendalltau, false_discovery_control
+from sklearn.feature_selection import mutual_info_regression as mi
 
 def per_gene_pcc(x, y, mean=True):
     """
@@ -76,6 +77,22 @@ def total_corr(x, y, method='pearsonr'):
     statistic, pval = corr(x, y)
     pval = false_discovery_control(np.nan_to_num(pval, nan=1.), method='bh')
     return np.mean(statistic), np.mean(pval)
+
+def per_gene_mi(x, y):
+    """
+    Calculate mutual informationbetween x and y on a gene/protein wise level.
+
+    Parameters:
+    x (np.array): 2D number array
+    y (np.array): 2D number array
+
+    Returns:
+    (np.array): mutual information
+    """
+    score = np.empty(x.shape[1], dtype=x.dtype)
+    for gene in x.shape[1]:
+        score[gene] = mi(x[:,gene], y[:,gene])
+    return score
 
 def corr_all2all(adata, method='pearsonr'):
     """

@@ -4,7 +4,7 @@ import seaborn as sns
 import numpy as np
 import scanpy as sc
 import pandas as pd
-from src.utils.utils import per_gene_corr, total_corr
+from src.utils.utils import per_gene_corr, total_corr, per_gene_mi
 import os
 
 def get_true_graph_expression_dict(path):
@@ -389,10 +389,14 @@ def visualize_graph_accuracy(value_dict, IDs, exps, name, figure_dir):
     similarity = torch.nn.CosineSimilarity()
     adata_p.obs['cs'] = similarity(torch.from_numpy(adata_p.X), torch.from_numpy(adata_y.X)).squeeze().detach().numpy()
 
-    pd.DataFrame({'ID': adata_p.obs['ID'].values,
+    df = pd.DataFrame({'ID': adata_p.obs['ID'].values,
                   'files': adata_p.obs['files'].values,
-                  'cosine_similarity': adata_p.obs['cs'].values}).to_csv(os.path.join(figure_dir, f'cosine_similarity_{name}.csv'))  
-    
+                  'cosine_similarity': adata_p.obs['cs'].values})
+    mean_value = adata_p.obs['cs'].values.mean()
+    mean_row = pd.DataFrame({'ID': 'mean', 'files': 'all', 'cosine_similarity': mean_value}, index=[0])
+    df = pd.concat([mean_row, df], ignore_index=True)
+    df.to_csv(os.path.join(figure_dir, f'cosine_similarity_{name}.csv')) 
+
     plt.close('all')
     boxplot = plt.boxplot(adata_p.obs['cs'],)# labels=[category])
     outliers = [flier.get_ydata() for flier in boxplot['fliers']]
@@ -453,6 +457,8 @@ def visualize_per_gene_corr(value_dict, IDs, exps, name, figure_dir):
     p_statistic, p_pval = per_gene_corr(pred, y, mean=False, method='PEARSONR')
     s_statistic, s_pval = per_gene_corr(pred, y, mean=False, method='SPEARMANR')
     k_statistic, k_pval = per_gene_corr(pred, y, mean=False, method='KENDALLTAU')
+
+    mi = per_gene_mi(pred, y)
         
     correlation_data = {
         'Variable': adata_p.var_names.values,
@@ -461,7 +467,8 @@ def visualize_per_gene_corr(value_dict, IDs, exps, name, figure_dir):
         'Spearman Correlation Coef.': [corr for corr in s_statistic],
         'Spearman p-value': [corr for corr in s_pval],
         'Kendall Correlation Coef.': [corr for corr in k_statistic],
-        'Kendall p-value': [corr for corr in k_pval]
+        'Kendall p-value': [corr for corr in k_pval],
+        'mi': [corr for corr in mi],
     }
 
     corr_df = pd.DataFrame(correlation_data)

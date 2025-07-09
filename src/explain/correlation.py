@@ -2,8 +2,8 @@ import os
 import scanpy as sc
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from src.utils.utils import per_gene_corr, total_corr
+import torch
+from src.utils.utils import per_gene_corr, total_corr, per_gene_mi
 
 def correlation(raw_subset_dir='CRC',
                 figure_dir='figures/crc_gat_test',
@@ -40,6 +40,11 @@ def correlation(raw_subset_dir='CRC',
     p_statistic, p_pval = per_gene_corr(pred, y, mean=False, method='PEARSONR')
     s_statistic, s_pval = per_gene_corr(pred, y, mean=False, method='SPEARMANR')
     k_statistic, k_pval = per_gene_corr(pred, y, mean=False, method='KENDALLTAU')
+
+    mi = per_gene_mi(pred, y)
+    similarity = torch.nn.CosineSimilarity()
+    sim = similarity(torch.from_numpy(pred), torch.from_numpy(y)).squeeze().detach().numpy()
+    mse = torch.nn.MSELoss(reduce=None)(torch.from_numpy(pred), torch.from_numpy(y)).squeeze().detach().numpy()
         
     correlation_data = {
         'Variable': var_names,
@@ -48,7 +53,8 @@ def correlation(raw_subset_dir='CRC',
         'Spearman Correlation Coef.': [corr for corr in s_statistic],
         'Spearman p-value': [corr for corr in s_pval],
         'Kendall Correlation Coef.': [corr for corr in k_statistic],
-        'Kendall p-value': [corr for corr in k_pval]
+        'Kendall p-value': [corr for corr in k_pval],
+        'Mutual Information': [corr for corr in mi]
     }
 
     corr_df = pd.DataFrame(correlation_data)
@@ -59,6 +65,14 @@ def correlation(raw_subset_dir='CRC',
     corr_df = pd.concat([mean_row, std_row, corr_df], ignore_index=True)
 
     corr_df.to_csv(os.path.join(out, 'corr_'+adata_name+'.csv'))
+
+    mean_data = {
+         'Metric': ['Pearson', 'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE'],
+         'Mean': [p_statistic.mean(), s_statistic.mean(), k_statistic.mean(), mi.mean(), sim.mean(), mse.mean()],
+         'Std': [p_statistic.std(), s_statistic.std(), k_statistic.std(), mi.std(), sim.std(), mse.std()],
+    }
+    df = pd.DataFrame(mean_data)
+    df.to_csv(os.path.join(out, 'avg_metrics_'+adata_name+'.csv'))
 
     corr_p = np.ndarray(adata['files'].unique().shape[0])
     corr_s = np.ndarray(adata['files'].unique().shape[0])
