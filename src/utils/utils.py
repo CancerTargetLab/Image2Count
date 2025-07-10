@@ -90,8 +90,8 @@ def per_gene_mi(x, y):
     (np.array): mutual information
     """
     score = np.empty(x.shape[1], dtype=x.dtype)
-    for gene in x.shape[1]:
-        score[gene] = mi(x[:,gene], y[:,gene])
+    for gene in range(x.shape[1]):
+        score[gene] = mi(x[:,gene].reshape(-1, 1), y[:,gene])
     return score
 
 def corr_all2all(adata, method='pearsonr'):
