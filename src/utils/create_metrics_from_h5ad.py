@@ -8,19 +8,27 @@ import torch_geometric
 import squidpy as sq
 from src.utils.utils import per_gene_mi, per_gene_corr
 
-target = 'data/raw/CRC_1p/CRC_1p_measurements.csv'
+path = 'save/hkgmh3_74/'
+target = 'data/raw/hk_geomean_h3_74.csv'
 num_subgraphs_per_graph = 900
-num_hops_per_subgraph = [1, 2, 3, 5, 8, 11]
+num_hops_per_subgraph = []
 
-name = 'crc_1p_24_6_[0-9]_all.h5ad'
-out = 'figures/tmp/crc_1p/24_6/'
+name = 'hkgmh3_74_50_lin_mean_all.h5ad'
+out = 'figures/tmp/hkgmh3_74_50/lin/mean/'
+
+sum_by_graph = True
+
+if sum_by_graph:
+    target_column_file_name = 'ROI'
+else:
+    target_column_file_name = 'Image'
 
 pattern = re.compile(name)
 
 target_df = pd.read_csv(target,
                  header=0,
                  sep=',')
-target_df['Image'] = target_df['Image'].apply(lambda x: x.split('.')[0])
+target_df[target_column_file_name] = target_df[target_column_file_name].apply(lambda x: x.split('.')[0])
 
 similarity = torch.nn.CosineSimilarity()
 mse = torch.nn.MSELoss(reduction='none')
@@ -36,10 +44,18 @@ def create_metrics(path, target_df):
             tmp['files'] = adata.obs['files'].values
             adata = tmp
             adata['files'] = adata['files'].apply(lambda x: x.split('graph_')[-1].split('.')[0])
-            adata = adata[adata['files'].isin(target_df['Image'])]     #Selects files that exist in pred, in case of only investiating test data
-            target_df = target_df[target_df['Image'].isin(adata['files'])]
+            adata = adata[adata['files'].isin(target_df[target_column_file_name])]     #Selects files that exist in pred, in case of only investiating test data
+            target_df = target_df[target_df[target_column_file_name].isin(adata['files'])]
             adata = adata.sort_values(by='files', kind='stable', ignore_index=True)
-            target_df = target_df.sort_values(by='Image', kind='stable', ignore_index=True)
+            target_df = target_df.sort_values(by=target_column_file_name, kind='stable', ignore_index=True)
+
+            if sum_by_graph:
+                subgraphs_x = np.empty((target_df[target_column_file_name].unique().shape[0], len(var_names)),
+                           dtype=adata[var_names[0]].values.dtype)
+                files = adata['files'].unique().tolist()    # return in order of appearance, is already sorted
+                for i, file in enumerate(files):
+                    subgraphs_x[i] = np.sum(adata.loc[adata['files']==file][var_names].values, axis=0)
+                adata = pd.DataFrame(data=subgraphs_x, columns=var_names)
 
             x = adata[var_names].values
             y = target_df[var_names].values
@@ -113,4 +129,4 @@ def metrics(x, y, name):
     df.to_csv(os.path.join(out, 'avg_metrics_'+name+'.csv'))
 
 
-create_metrics('out/', target_df)
+create_metrics(path, target_df)
