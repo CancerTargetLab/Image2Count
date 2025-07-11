@@ -41,10 +41,10 @@ def create_metrics(path, target_df):
             adata = adata.sort_values(by='files', kind='stable', ignore_index=True)
             target_df = target_df.sort_values(by='Image', kind='stable', ignore_index=True)
 
-            x = adata[adata.columns[1:].values].values
-            y = target_df[adata.columns[1:].values].values
+            x = adata[var_names].values
+            y = target_df[var_names].values
             for hops in num_hops_per_subgraph:
-                subset_x, subset_y = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, adata.columns[1:].values)
+                subset_x, subset_y = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, var_names)
                 metrics(subset_x, subset_y, entrie+f'_{hops}')
             metrics(x, y, entrie)
         # elif os.path.isdir(os.path.join(path, entrie)):
