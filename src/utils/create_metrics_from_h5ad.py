@@ -1,5 +1,6 @@
 import scanpy as sc
 import os
+import re
 import numpy as np
 import pandas as pd
 import torch
@@ -11,7 +12,10 @@ target = 'data/raw/CRC_1p/CRC_1p_measurements.csv'
 num_subgraphs_per_graph = 900
 num_hops_per_subgraph = [1, 2, 3, 5, 8, 11]
 
-name = 'crc_1p_24_6_mean_all.h5ad'
+name = 'crc_1p_24_6_[0-9]_all.h5ad'
+out = 'figures/tmp/crc_1p/24_6/'
+
+pattern = re.compile(name)
 
 target_df = pd.read_csv(target,
                  header=0,
@@ -19,17 +23,17 @@ target_df = pd.read_csv(target,
 target_df['Image'] = target_df['Image'].apply(lambda x: x.split('.')[0])
 
 similarity = torch.nn.CosineSimilarity()
-mse = torch.nn.MSELoss(reduction='none', )
+mse = torch.nn.MSELoss(reduction='none')
 
 def create_metrics(path, target_df):
     entries = os.listdir(path)
     for entrie in entries:
-        if entrie.endswith('.h5ad') and name in entrie and os.path.isfile(os.path.join(path, entrie)):
+        if entrie.endswith('.h5ad') and pattern.match(entrie) and os.path.isfile(os.path.join(path, entrie)):
+            print(entrie)
             adata = sc.read_h5ad(os.path.join(path, entrie))
             var_names = adata.var_names.values
-            tmp = pd.DataFrame()
+            tmp = pd.DataFrame(data=adata.X, columns=var_names)
             tmp['files'] = adata.obs['files'].values
-            tmp[var_names] = adata.X
             adata = tmp
             adata['files'] = adata['files'].apply(lambda x: x.split('graph_')[-1].split('.')[0])
             adata = adata[adata['files'].isin(target_df['Image'])]     #Selects files that exist in pred, in case of only investiating test data
@@ -41,10 +45,10 @@ def create_metrics(path, target_df):
             y = target_df[adata.columns[1:].values].values
             for hops in num_hops_per_subgraph:
                 subset_x, subset_y = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, adata.columns[1:].values)
-                metrics(subset_x, subset_y, name+f'_{hops}')
-            metrics(x, y, name)
-        elif os.path.isdir(os.path.join(path, entrie)):
-            create_metrics(os.path.join(path, entrie), target_df)
+                metrics(subset_x, subset_y, entrie+f'_{hops}')
+            metrics(x, y, entrie)
+        # elif os.path.isdir(os.path.join(path, entrie)):
+        #     create_metrics(os.path.join(path, entrie), target_df)
 
 def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
     subgraphs_x = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph, pred.shape[1]),
@@ -106,7 +110,7 @@ def metrics(x, y, name):
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std()],
     }
     df = pd.DataFrame(mean_data)
-    df.to_csv(os.path.join('figures/tmp', 'avg_metrics_'+name+'.csv'))
+    df.to_csv(os.path.join(out, 'avg_metrics_'+name+'.csv'))
 
 
 create_metrics('out/', target_df)
