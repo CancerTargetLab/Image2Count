@@ -8,15 +8,17 @@ import torch_geometric
 import squidpy as sq
 from src.utils.utils import per_gene_mi, per_gene_corr
 
-path = 'save/hkgmh3_74/'
-target = 'data/raw/hk_geomean_h3_74.csv'
-num_subgraphs_per_graph = 900
-num_hops_per_subgraph = []
+path = 'path/to/crossvalidation/model/saves/'  # Path to dir containing .h5ad files of predicted data
+target = 'csv/containing/true/expression/data.csv'
+num_subgraphs_per_graph = 900   # As named
+num_hops_per_subgraph = []  # List of hops to expand cellular neighbourhood, e.g. [1, 2, 3, 5, 8, 11]
 
-name = 'hkgmh3_74_50_lin_mean_all.h5ad'
-out = 'figures/tmp/hkgmh3_74_50/lin/mean/'
+name = 'regular_expression_pattern_of_crossval_model_h5ad_files.h5ad'   # As assigned
+out = 'figures/path/to/save/'   # As assigned
 
-sum_by_graph = True
+sum_by_graph = False    # If you use a path pointing to measurements.csv of an experiemnt, meaning measurements.csv
+                        # contains per cell gene expression, set this to False. If path points to labels.csv, containing
+                        # expression per image, set this to True.
 
 if sum_by_graph:
     target_column_file_name = 'ROI'

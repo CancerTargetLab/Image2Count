@@ -52,29 +52,6 @@ do
             --embed_dir out/crc_1p_lin/$m/ --vis_name crc_1p_lin_$m --visualize_expression --has_expr_data --raw_subset_dir CRC_1p
     python -m main --visualize_model_run --model_path out/models/crc_1p_lin/$m.pt --output_model_name CRC_1p_"$m"_lin --figure_model_dir figures/crc_1p/lin/$m/
 
-    for hops in 1 2 3 5 8 11;
-    do
-
-        python -m main --model_type Image2Count --raw_subset_dir CRC_1p --batch_size 64 --num_workers 8 --num_node_features 32 \
-            --num_embed_features 128  --lin_layers 35 --gat_layers 0 --output_name out/models/crc_1p_35_0/$m.pt --output_graph_embed out/crc_1p_35_0/"$m"_900_$hops/ \
-            --label_data CRC_1p_label.csv --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 900 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_1p/test/subgraphs --figure_dir figures/crc_1p/24_6/$m/900_$hops \
-                --embed_dir out/crc_1p_35_0/"$m"_900_$hops/ --vis_name crc_1p_35_0_"$m"_900_$hops --visualize_expression --has_expr_data --raw_subset_dir CRC_1p
-
-        python -m main --model_type Image2Count --raw_subset_dir CRC_1p --batch_size 64 --num_workers 8 --num_node_features 32 --num_gat_features 32 \
-            --num_embed_features 128  --lin_layers 24 --gat_layers 6 --output_name out/models/crc_1p_24_06/$m.pt --output_graph_embed out/crc_1p_24_6/"$m"_900_$hops/ \
-            --label_data CRC_1p_label.csv --heads 8 --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 900 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_1p/test/subgraphs --figure_dir figures/crc_1p/24_6/$m/900_$hops \
-                --embed_dir out/crc_1p_24_6/"$m"_900_$hops/ --vis_name crc_1p_24_6_"$m"_900_$hops --visualize_expression --has_expr_data --raw_subset_dir CRC_1p
-
-        python -m main --model_type LIN --raw_subset_dir CRC_1p --batch_size 64 --num_workers 8 --num_node_features 32 \
-            --output_name out/models/crc_1p_lin/$m.pt --output_graph_embed out/crc_1p_lin/"$m"_900_$hops/ \
-            --label_data CRC_1p_label.csv --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 900 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_1p/test/subgraphs --figure_dir figures/crc_1p/lin/$m/900_$hops \
-                --embed_dir out/crc_1p_lin/"$m"_900_$hops/ --vis_name crc_1p_lin_"$m"_900_$hops --visualize_expression --has_expr_data --raw_subset_dir CRC_1p
-
-    done
-
 done
 
 python -m main --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_1p/test --figure_dir figures/crc_1p/35_0/mean/ --merge \

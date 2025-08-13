@@ -52,30 +52,6 @@ do
             --embed_dir out/cosmx_lin/$m/ --vis_name cosmx_lin_$m --visualize_expression --has_expr_data --raw_subset_dir cosmx
     python -m main --visualize_model_run --model_path out/models/cosmx_lin/$m.pt --output_model_name cosmx_"$m"_lin --figure_model_dir figures/cosmx/lin/$m/
 
-    for hops in 1 2 3 5 8 11;
-    do
-
-        python -m main --model_type Image2Count --raw_subset_dir cosmx --batch_size 64 --num_workers 8 --num_node_features 512 \
-            --num_embed_features 128  --lin_layers 17 --gat_layers 0 --output_name out/models/cosmx_17_0/$m.pt --output_graph_embed out/cosmx_17_0_$hops/"$m"_36/ \
-            --label_data cosmx_label.csv --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 36 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/6_6/$m/36_$hops \
-                --embed_dir out/cosmx_17_0_$hops/"$m"_36/ --vis_name cosmx_17_0_"$m"_36_$hops --visualize_expression --raw_subset_dir cosmx
-
-        python -m main --model_type Image2Count --raw_subset_dir cosmx --batch_size 64 --num_workers 8 --num_node_features 512 --num_gat_features 64 \
-            --num_embed_features 128  --lin_layers 6 --gat_layers 6 --output_name out/models/cosmx_6_6/$m.pt --output_graph_embed out/cosmx_6_6_$hops/"$m"_36/ \
-            --label_data cosmx_label.csv --heads 8 --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 36 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/6_6/$m/36_$hops \
-                --embed_dir out/cosmx_6_6_$hops/"$m"_36/ --vis_name cosmx_6_6_"$m"_36_$hops --visualize_expression --raw_subset_dir cosmx
-
-        python -m main --model_type LIN --raw_subset_dir cosmx --batch_size 64 --num_workers 8 --num_node_features 512 \
-            --output_name out/models/cosmx_lin/$m.pt --output_graph_embed out/cosmx_lin_$hops/"$m"_36/ \
-            --label_data cosmx_label.csv --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 36 --num_hops $hops
-        python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/lin/$m/36_$hops \
-                --embed_dir out/cosmx_lin_$hops/"$m"_36/ --vis_name cosmx_lin_"$m"_36_$hops --visualize_expression --raw_subset_dir cosmx
-
-    done
-
-
 done
 
 python -m main --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test --figure_dir figures/cosmx/6_6/mean/ --merge \
@@ -95,21 +71,3 @@ python -m main --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/tes
 python -m main --visualize_image --vis_name cosmx_lin_mean.h5ad --vis_img_raw_subset_dir cosmx/test --name_tiff 20210706_105344_S2_C902_P99_N99_F020_Z001.TIF --vis_all_channels \
         --vis_protein 'PTPRC,CD74,CD9,CD163,CD68,CD14,CD4,CD34,CD3D,CD3E,CD3G,CDH1,MKI67,TP53,ICOS,IDO1,HLA-A,HLA-B,HLA-C,KRT1,KRT14,KRT15,TYK2,KRT17,KRT19,JAG1,MTRNR2L1,CRP,TM4SF1,PTGDR2,C1QA,MS4A1,MS4A4A,MET,CD8A,CD8B,CD84,CD127,FN1,FOXP3,DDR1,CTLA4,CD44,CD274,CD37' \
         --figure_img_dir figures/cosmx/lin/mean/20210706_105344_S2_C902_P99_N99_F020_Z001/
-
-for hops in 1 2 3 5 8 11;
-do
-    # create subgraphs
-    python -m main --model_type Image2Count --raw_subset_dir cosmx --batch_size 64 --num_workers 8 --num_node_features 512 \
-            --num_embed_features 128  --lin_layers 17 --gat_layers 0 --output_name out/models/cosmx_17_0/999.pt --output_graph_embed out/cosmx_17_0_$hops/999_36/ \
-            --label_data cosmx_label.csv --subgraphs_per_graph 0 --data_use_log_graph --embed_gnn_data --num_cfolds 0 --subgraphs_per_graph 36 --num_hops $hops
-
-    python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/6_6/$m/mean/36_$hops \
-        --embed_dir out/cosmx_17_0_$hops/ --vis_name cosmx_17_0_"$m"_36_mean_$hops --visualize_expression --raw_subset_dir cosmx --merge
-
-    python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/6_6/$m/mean/36_$hops \
-        --embed_dir out/cosmx_6_6_$hops/ --vis_name cosmx_6_6_"$m"_36_mean_$hops --visualize_expression --raw_subset_dir cosmx --merge
-
-    python -m main --vis_select_cells 50000 --vis_label_data cosmx_label.csv --processed_subset_dir cosmx/test/subgraphs --figure_dir figures/cosmx/lin_$hops/$m/mean/36_$hops \
-        --embed_dir out/cosmx_lin_$hops/ --vis_name cosmx_lin_"$m"_36_mean_$hops --visualize_expression --raw_subset_dir cosmx --merge
-
-done
