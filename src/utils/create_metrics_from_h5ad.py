@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 import torch_geometric
 import squidpy as sq
-from src.utils.utils import per_gene_mi, per_gene_corr
+from src.utils.utils import per_gene_mi, per_gene_corr, per_area_ssim, per_area_ari, per_area_nmi, per_area_js_div, cluster_cell_expression
 
 path = 'path/to/crossvalidation/model/saves/'  # Path to dir containing .h5ad files of predicted data
 target = 'csv/containing/true/expression/data.csv'
@@ -20,6 +20,9 @@ sum_by_graph = False    # If you use a path pointing to measurements.csv of an e
                         # contains per cell gene expression, set this to False. If path points to labels.csv, containing
                         # expression per image, set this to True.
 
+do_clustering_metrics = False
+filter_vars = False
+
 if sum_by_graph:
     target_column_file_name = 'ROI'
 else:
@@ -32,8 +35,20 @@ target_df = pd.read_csv(target,
                  sep=',')
 target_df[target_column_file_name] = target_df[target_column_file_name].apply(lambda x: x.split('.')[0])
 
+if do_clustering_metrics:
+    y_clusters = {}
+
+if filter_vars:
+    if  os.path.isfile(filter_vars):
+        _vars = pd.read_csv(filter_vars)
+        _vars = _vars[_vars.columns[0]].to_list()
+        target_df= target_df.drop(columns=_vars)
+
 similarity = torch.nn.CosineSimilarity()
 mse = torch.nn.MSELoss(reduction='none')
+
+if not os.path.exists(out):
+    os.makedirs(out)
 
 def create_metrics(path, target_df):
     entries = os.listdir(path)
@@ -41,6 +56,8 @@ def create_metrics(path, target_df):
         if entrie.endswith('.h5ad') and pattern.match(entrie) and os.path.isfile(os.path.join(path, entrie)):
             print(entrie)
             adata = sc.read_h5ad(os.path.join(path, entrie))
+            if filter_vars:
+                adata = adata[~adata.var_names.isin(_vars)]
             var_names = adata.var_names.values
             tmp = pd.DataFrame(data=adata.X, columns=var_names)
             tmp['files'] = adata.obs['files'].values
@@ -63,8 +80,8 @@ def create_metrics(path, target_df):
             y = target_df[var_names].values
             for hops in num_hops_per_subgraph:
                 subset_x, subset_y = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, var_names)
-                metrics(subset_x, subset_y, entrie+f'_{hops}')
-            metrics(x, y, entrie)
+                metrics(subset_x, subset_y, entrie+f'_{hops}', f'{hops}')
+            metrics(x, y, entrie, 'sc')
         # elif os.path.isdir(os.path.join(path, entrie)):
         #     create_metrics(os.path.join(path, entrie), target_df)
 
@@ -95,7 +112,7 @@ def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
         counts = np.zeros((subset.shape[0], 1))
         coordinates = np.column_stack((subset["Centroid.X.px"].to_numpy(), subset["Centroid.Y.px"].to_numpy()))
         adata = sc.AnnData(counts, obsm={"spatial": coordinates})
-        sq.gr.spatial_neighbors(adata, coord_type="generic", n_neighs=6)
+        sq.gr.spatial_neighbors(adata, coord_type="generic", n_neighs=6)    #TODO: wastefull, only do once ?
         edge_matrix = adata.obsp["spatial_distances"]
         edge_index, _ = torch_geometric.utils.convert.from_scipy_sparse_matrix(edge_matrix)
         
@@ -111,8 +128,10 @@ def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
     
     return subgraphs_x, subgraphs_y
 
-def metrics(x, y, name):
+def metrics(x, y, name, cluster_key):
     sim = similarity(torch.from_numpy(x), torch.from_numpy(y)).numpy()
+    ssim = per_area_ssim(x, y)
+    js_div = per_area_js_div(x, y)
     mi = per_gene_mi(x, y)
     dist = mse(torch.log(torch.from_numpy(x)+1), torch.log(torch.from_numpy(y)+1)).numpy()
     is_g_zero = np.sum(y, axis=-1) > 0
@@ -123,10 +142,22 @@ def metrics(x, y, name):
     k_stat, _ = per_gene_corr(x, y, mean=False, method='kendalltau')
 
     mean_data = {
-        'Metric': ['Pearson', 'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE'],
-        'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean()],
-        'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std()],
+        'Metric': ['Pearson',  'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE', 'JensenShannonDiv', 'SSIM'],
+        'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim],
+        'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), 0],    # ssim returns singular value
     }
+    if do_clustering_metrics:
+        x_cluster = cluster_cell_expression(x)
+        if cluster_key not in y_clusters.keys():
+            y_cluster = cluster_cell_expression(y)
+            y_clusters[cluster_key] = y_cluster
+        else:
+            y_cluster = y_clusters[cluster_key]
+        ari = per_area_ari(x_cluster, y_cluster)
+        nmi = per_area_nmi(x_cluster, y_cluster)
+        mean_data['Metric'].extend(['ARI', 'NMI'])
+        mean_data['Mean'].extend([ari, nmi])
+        mean_data['Std'].extend([0, 0]) # We ignore std values for these metrics as we do not calculate multiple
     df = pd.DataFrame(mean_data)
     df.to_csv(os.path.join(out, 'avg_metrics_'+name+'.csv'))
 

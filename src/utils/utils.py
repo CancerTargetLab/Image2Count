@@ -1,7 +1,11 @@
 import numpy as np
+import scanpy as sc
 import random
 import torch
 import os
+from skimage.metrics import structural_similarity
+from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
+from scipy.spatial.distance import jensenshannon
 from scipy.stats import pearsonr, spearmanr, kendalltau, false_discovery_control
 from sklearn.feature_selection import mutual_info_regression as mi
 
@@ -80,7 +84,7 @@ def total_corr(x, y, method='pearsonr'):
 
 def per_gene_mi(x, y):
     """
-    Calculate mutual informationbetween x and y on a gene/protein wise level.
+    Calculate mutual information between x and y on a gene/protein wise level.
 
     Parameters:
     x (np.array): 2D number array
@@ -91,8 +95,60 @@ def per_gene_mi(x, y):
     """
     score = np.empty(x.shape[1], dtype=x.dtype)
     for gene in range(x.shape[1]):
-        score[gene] = mi(x[:,gene].reshape(-1, 1), y[:,gene])
+        score[gene] = mi(x[:,gene].reshape(-1, 1), y[:,gene], n_jobs=-1)
     return score
+
+def per_area_ari(x, y):
+    """
+    Calculate adjustend rand index between x and y .
+
+    Parameters:
+    x (np.array): 1D number array of clusters
+    y (np.array): 1D number array of clusters
+
+    Returns:
+    (float): ARI
+    """
+    return adjusted_rand_score(y, x)
+
+def per_area_nmi(x, y):
+    """
+    Calculate normalized mutual information for labels between x and y .
+
+    Parameters:
+    x (np.array): 1D number array of clusters
+    y (np.array): 1D number array of clusters
+
+    Returns:
+    (float): NMI
+    """
+    return normalized_mutual_info_score(y, x)
+
+def per_area_js_div(x, y):
+    """
+    Calculate jason shannon divergence between x and y on a cell/area wise level.
+
+    Parameters:
+    x (np.array): 2D number array
+    y (np.array): 2D number array
+
+    Returns:
+    (np.array): jason shannon divergence
+    """
+    return jensenshannon(x, y, axis=1)**2
+
+def per_area_ssim(x, y):
+    """
+    Calculate structural similarity between x and y on a cell/area wise level.
+
+    Parameters:
+    x (np.array): 2D number array
+    y (np.array): 2D number array
+
+    Returns:
+    (np.array): jason shannon divergence
+    """
+    return structural_similarity(x, y, data_range=max(x.max(), y.max()), channel_axis=1)
 
 def corr_all2all(adata, method='pearsonr'):
     """
@@ -116,6 +172,19 @@ def corr_all2all(adata, method='pearsonr'):
             else:
                 statistic[i,j], pval[i,j] = statistic[j,i], pval[j,i]
     return statistic, pval
+
+def cluster_cell_expression(x):
+    adata = sc.AnnData(x)
+    sc.pp.normalize_total(adata)
+    sc.pp.log1p(adata)
+    sc.pp.scale(adata)
+    sc.pp.pca(adata,
+                svd_solver='arpack', 
+                n_comps=adata.var_names.shape[0]-1 if adata.var_names.shape[0]<51 else 50,
+                )
+    sc.pp.neighbors(adata, n_neighbors=10, n_pcs=adata.varm['PCs'].shape[1])
+    sc.tl.leiden(adata, resolution=0.5, flavor="igraph", n_iterations=2)
+    return adata.obs['leiden'].values
 
 def avg_cell_n(path):
       """
