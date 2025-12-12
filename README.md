@@ -11,6 +11,7 @@ pip install torch-geometric -f https://data.pyg.org/whl/torch-2.4.0+cu121.html
 pip install torch-cluster -f https://data.pyg.org/whl/torch-2.4.0+cu121.html  
 pip install torchvision -f https://data.pyg.org/whl/torch-2.4.0+cu121.html  
 pip install squidpy  
+pip install decoupler  
 #pip install imctools  
 ```
 

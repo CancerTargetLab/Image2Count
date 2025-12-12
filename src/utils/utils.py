@@ -1,5 +1,6 @@
 import numpy as np
 import scanpy as sc
+import decoupler as dc
 import random
 import torch
 import os
@@ -150,6 +151,14 @@ def per_area_ssim(x, y):
     """
     return structural_similarity(x, y, data_range=max(x.max(), y.max()), channel_axis=1)
 
+def per_cluster_key_coverage(predicted_dict, true_dict, top_k=5):
+    identified = 0
+    for key in true_dict.keys():
+        for val in predicted_dict[key]['name']:
+            if val in true_dict[key]['name']:
+                identified += 1
+    return identified / (5 * len(list(true_dict.keys())))
+
 def corr_all2all(adata, method='pearsonr'):
     """
     Calculate correlation of method between x and y on a gene/protein wise level.
@@ -185,6 +194,72 @@ def cluster_cell_expression(x):
     sc.pp.neighbors(adata, n_neighbors=10, n_pcs=adata.varm['PCs'].shape[1])
     sc.tl.leiden(adata, resolution=0.5, flavor="igraph", n_iterations=2)
     return adata.obs['leiden'].values
+
+def per_cluster_pathways(x, var_names, clusters, top_k=5):
+    adata = sc.AnnData(x)
+    adata.var_names = var_names
+    adata.obs['leiden'] = clusters
+    sc.pp.normalize_total(adata)
+    sc.pp.log1p(adata)
+
+    collectri = dc.op.collectri(organism='human')
+    dc.mt.ulm(data=adata, net=collectri, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    tf_source_markers = (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'],
+            'stat': x['stat'],
+            'pval': x['pval'],
+            'padj': x['padj']
+        })
+        .to_dict())
+    
+    progeny = dc.op.progeny(organism="human")
+    dc.mt.ulm(data=adata, net=progeny, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    pw_source_markers = (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'],
+            'stat': x['stat'],
+            'pval': x['pval'],
+            'padj': x['padj']
+        })
+        .to_dict())
+
+    hallmark = dc.op.hallmark(organism='human')
+    dc.mt.ulm(data=adata, net=hallmark, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    hall_mark_source_markers = (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'],
+            'stat': x['stat'],
+            'pval': x['pval'],
+            'padj': x['padj']
+        })
+        .to_dict())
+
+    return {'tf': tf_source_markers, 'pw': pw_source_markers, 'hm': hall_mark_source_markers}
 
 def avg_cell_n(path):
       """

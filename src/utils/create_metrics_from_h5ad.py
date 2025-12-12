@@ -1,12 +1,13 @@
 import scanpy as sc
 import os
 import re
+import pickle
 import numpy as np
 import pandas as pd
 import torch
 import torch_geometric
 import squidpy as sq
-from src.utils.utils import per_gene_mi, per_gene_corr, per_area_ssim, per_area_ari, per_area_nmi, per_area_js_div, cluster_cell_expression
+from src.utils.utils import per_gene_mi, per_gene_corr, per_area_ssim, per_area_ari, per_area_nmi, per_area_js_div, per_cluster_pathways, per_cluster_key_coverage, cluster_cell_expression
 
 path = 'path/to/crossvalidation/model/saves/'  # Path to dir containing .h5ad files of predicted data
 target = 'csv/containing/true/expression/data.csv'
@@ -21,7 +22,9 @@ sum_by_graph = False    # If you use a path pointing to measurements.csv of an e
                         # expression per image, set this to True.
 
 do_clustering_metrics = False
+do_pathway_metrics = False
 filter_vars = False
+do_performance_metrics = False
 
 if sum_by_graph:
     target_column_file_name = 'ROI'
@@ -37,6 +40,13 @@ target_df[target_column_file_name] = target_df[target_column_file_name].apply(la
 
 if do_clustering_metrics:
     y_clusters = {}
+    y_cluster_enrichment = {}
+if do_performance_metrics:
+    performance_metrics = {
+        'SNR': pd.DataFrame(),
+        'abundance': pd.DataFrame(),
+        'mean_edge_l': pd.DataFrame()
+    }
 
 if filter_vars:
     if  os.path.isfile(filter_vars):
@@ -44,11 +54,11 @@ if filter_vars:
         _vars = _vars[_vars.columns[0]].to_list()
         target_df= target_df.drop(columns=_vars)
 
-similarity = torch.nn.CosineSimilarity()
-mse = torch.nn.MSELoss(reduction='none')
-
 if not os.path.exists(out):
     os.makedirs(out)
+
+similarity = torch.nn.CosineSimilarity()
+mse = torch.nn.MSELoss(reduction='none')
 
 def create_metrics(path, target_df):
     entries = os.listdir(path)
@@ -57,7 +67,7 @@ def create_metrics(path, target_df):
             print(entrie)
             adata = sc.read_h5ad(os.path.join(path, entrie))
             if filter_vars:
-                adata = adata[~adata.var_names.isin(_vars)]
+                adata = adata[:,~adata.var_names.isin(_vars)]
             var_names = adata.var_names.values
             tmp = pd.DataFrame(data=adata.X, columns=var_names)
             tmp['files'] = adata.obs['files'].values
@@ -79,17 +89,24 @@ def create_metrics(path, target_df):
             x = adata[var_names].values
             y = target_df[var_names].values
             for hops in num_hops_per_subgraph:
-                subset_x, subset_y = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, var_names)
-                metrics(subset_x, subset_y, entrie+f'_{hops}', f'{hops}')
-            metrics(x, y, entrie, 'sc')
-        # elif os.path.isdir(os.path.join(path, entrie)):
-        #     create_metrics(os.path.join(path, entrie), target_df)
+                subset_x, subset_y, mean_edge_l = create_subgraphs(x, target_df, num_subgraphs_per_graph, hops, var_names)
+                if do_performance_metrics:
+                    prepare_performance_metrics(var_names, subset_y, f'{hops}', mean_edge_l)
+                metrics(subset_x, subset_y, entrie+f'_{hops}', f'{hops}', var_names)
+            if do_performance_metrics:
+                mean_edge_l = create_subgraphs(x, target_df, 0, -1, var_names)
+            prepare_performance_metrics(var_names, subset_y, 'sc', mean_edge_l)
+            metrics(x, y, entrie, 'sc', var_names)
 
 def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
-    subgraphs_x = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph, pred.shape[1]),
-                           dtype=pred.dtype)
-    subgraphs_y = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph, pred.shape[1]),
-                           dtype=pred.dtype)
+    if num_subgraphs_per_graph > 0:
+        subgraphs_x = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph, pred.shape[1]),
+                            dtype=pred.dtype)
+        subgraphs_y = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph, pred.shape[1]),
+                            dtype=pred.dtype)
+        subgraphs_x_m_edge_l = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph,))
+    else:
+        subgraphs_x_m_edge_l = np.empty((target_df.shape[0]))
     for g, subset_name in enumerate(target_df['Image'].unique().tolist()):
         subset = target_df.loc[target_df['Image']==subset_name]
         subset_x = pred[target_df['Image']==subset_name]
@@ -114,21 +131,43 @@ def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
         adata = sc.AnnData(counts, obsm={"spatial": coordinates})
         sq.gr.spatial_neighbors(adata, coord_type="generic", n_neighs=6)    #TODO: wastefull, only do once ?
         edge_matrix = adata.obsp["spatial_distances"]
-        edge_index, _ = torch_geometric.utils.convert.from_scipy_sparse_matrix(edge_matrix)
+        edge_index, edge_attr = torch_geometric.utils.convert.from_scipy_sparse_matrix(edge_matrix)
+        data = torch_geometric.data.Data(edge_index=edge_index, edge_attr=edge_attr, num_nodes=subset.shape[0])
+        data = torch_geometric.transforms.ToUndirected(merge=False)(data)
         
-        for p, point in enumerate(points):
-            idx = np.argmin(np.abs(subset['Centroid.X.px'].values-point[0]) + np.abs(subset['Centroid.Y.px']-point[1]))
-            subgraph_idxs, _, _, _ = torch_geometric.utils.k_hop_subgraph(int(idx),
-                                                                        hops,
-                                                                        edge_index,
-                                                                        relabel_nodes=True, 
-                                                                        directed=False)
-            subgraphs_x[p+g*num_subgraphs_per_graph] = np.sum(subset_x[subgraph_idxs.numpy()], axis=0)
-            subgraphs_y[p+g*num_subgraphs_per_graph] = np.sum(subset_y[subgraph_idxs.numpy()], axis=0)
+        if num_subgraphs_per_graph > 0:
+            idx_list = []
+            rng = np.random.default_rng(0)
+            for p, point in enumerate(points):
+                idx = np.argmin(np.abs(subset['Centroid.X.px'].values-point[0]) + np.abs(subset['Centroid.Y.px']-point[1]))
+                if idx in idx_list:
+                    idx = rng.integers(0, subset.shape[0])
+                idx_list.append(idx)
+                subgraph_idxs, _, _, edge_mask = torch_geometric.utils.k_hop_subgraph(int(idx),
+                                                                            hops,
+                                                                            data.edge_index,
+                                                                            relabel_nodes=True, 
+                                                                            directed=False)
+                subgraphs_x[p+g*num_subgraphs_per_graph] = np.sum(subset_x[subgraph_idxs.numpy()], axis=0)
+                subgraphs_y[p+g*num_subgraphs_per_graph] = np.sum(subset_y[subgraph_idxs.numpy()], axis=0)
+                subgraphs_x_m_edge_l[p+g*num_subgraphs_per_graph] = data.edge_attr[edge_mask].mean().numpy()
+        else:
+            sum_idx = torch.zeros(data.num_nodes, dtype=data.edge_attr.dtype)
+            sum_idx.index_add_(dim=0, index=data.edge_index[0], source=data.edge_attr)
+            degree = torch_geometric.utils.degree(data.edge_index[0], data.num_nodes)
+            subgraphs_x_m_edge_l[target_df['Image']==subset_name] = sum_idx/degree
     
-    return subgraphs_x, subgraphs_y
+    return subgraphs_x, subgraphs_y, subgraphs_x_m_edge_l
 
-def metrics(x, y, name, cluster_key):
+def prepare_performance_metrics(var_names, y, hops, mean_edge_l):
+    if 'markers' not in performance_metrics['SNR'].columns:
+        performance_metrics['SNR']['markers'] = var_names
+        performance_metrics['abundance']['markers'] = var_names
+    performance_metrics['SNR'][f'SNR{hops}'] = y.mean(axis=0)/(y.std(axis=0)+1e-12)
+    performance_metrics['abundance'][f'abundance_{hops}'] = np.mean(np.log1p(y), axis=0)
+    performance_metrics['mean_edge_l'][f'mean_edge_l_{hops}'] = mean_edge_l
+
+def metrics(x, y, name, cluster_key, var_names):
     sim = similarity(torch.from_numpy(x), torch.from_numpy(y)).numpy()
     ssim = per_area_ssim(x, y)
     js_div = per_area_js_div(x, y)
@@ -141,6 +180,22 @@ def metrics(x, y, name, cluster_key):
     s_stat, _ = per_gene_corr(x, y, mean=False, method='spearmanr')
     k_stat, _ = per_gene_corr(x, y, mean=False, method='kendalltau')
 
+    if do_performance_metrics:
+        performance_metrics['mean_edge_l'][f'sim_{cluster_key}_{name}'] = sim
+        performance_metrics['mean_edge_l'][f'js_div_{cluster_key}_{name}'] = js_div
+        performance_metrics['SNR'][f'mi_{cluster_key}_{name}'] = mi
+        performance_metrics['SNR'][f'dist_{cluster_key}_{name}'] = dist.mean(axis=0)
+        performance_metrics['SNR'][f'js_div_{cluster_key}_{name}'] = js_div
+        performance_metrics['SNR'][f'pcc_{cluster_key}_{name}'] = p_stat
+        performance_metrics['SNR'][f'scc_{cluster_key}_{name}'] = s_stat
+        performance_metrics['SNR'][f'kcc_{cluster_key}_{name}'] = k_stat
+        performance_metrics['abundance'][f'mi_{cluster_key}_{name}'] = mi
+        performance_metrics['abundance'][f'dist_{cluster_key}_{name}'] = dist.mean(axis=0)
+        performance_metrics['abundance'][f'js_div_{cluster_key}_{name}'] = js_div
+        performance_metrics['abundance'][f'pcc_{cluster_key}_{name}'] = p_stat
+        performance_metrics['abundance'][f'scc_{cluster_key}_{name}'] = s_stat
+        performance_metrics['abundance'][f'kcc_{cluster_key}_{name}'] = k_stat
+
     mean_data = {
         'Metric': ['Pearson',  'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE', 'JensenShannonDiv', 'SSIM'],
         'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim],
@@ -149,17 +204,41 @@ def metrics(x, y, name, cluster_key):
     if do_clustering_metrics:
         x_cluster = cluster_cell_expression(x)
         if cluster_key not in y_clusters.keys():
-            y_cluster = cluster_cell_expression(y)
+            y_cluster = cluster_cell_expression(y.copy())
             y_clusters[cluster_key] = y_cluster
         else:
             y_cluster = y_clusters[cluster_key]
+        if do_pathway_metrics:
+            if cluster_key not in y_cluster_enrichment.keys():
+                y_enrichment = per_cluster_pathways(y.copy(), var_names, clusters=y_cluster, top_k=5)
+                y_cluster_enrichment[cluster_key] = y_enrichment
+            else:
+                y_enrichment = y_cluster_enrichment[cluster_key]
+            x_enrichment = per_cluster_pathways(x.copy(), var_names, clusters=y_cluster, top_k=5)
+            y_cluster_enrichment[f'{cluster_key}_{name}'] = x_enrichment
+            tf_coverage = per_cluster_key_coverage(x_enrichment['tf'], y_enrichment['tf'])
+            pw_coverage = per_cluster_key_coverage(x_enrichment['pw'], y_enrichment['pw'])
+            hm_coverage = per_cluster_key_coverage(x_enrichment['hm'], y_enrichment['hm'])
+            mean_data['Metric'].extend(['tf_cov', 'pw_cov', 'hm_cov'])
+            mean_data['Mean'].extend([ari, nmi, tf_coverage, pw_coverage, hm_coverage])
+            mean_data['Std'].extend([0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
         ari = per_area_ari(x_cluster, y_cluster)
         nmi = per_area_nmi(x_cluster, y_cluster)
         mean_data['Metric'].extend(['ARI', 'NMI'])
         mean_data['Mean'].extend([ari, nmi])
-        mean_data['Std'].extend([0, 0]) # We ignore std values for these metrics as we do not calculate multiple
+        mean_data['Std'].extend([0, 0, ]) # We ignore std values for these metrics as we do not calculate multiple
+        if do_performance_metrics:
+            performance_metrics['mean_edge_l'][f'ari_{cluster_key}_{name}'] = ari
+            performance_metrics['mean_edge_l'][f'nmi_{cluster_key}_{name}'] = nmi
     df = pd.DataFrame(mean_data)
     df.to_csv(os.path.join(out, 'avg_metrics_'+name+'.csv'))
 
-
 create_metrics(path, target_df)
+if do_performance_metrics:
+    if not os.path.exists(os.path.join(out, 'performance_metrics')):
+        os.makedirs(os.path.join(out, 'performance_metrics'))
+    for key in performance_metrics.keys():
+        performance_metrics[key].to_csv(os.path.join(out, 'performance_metrics.csv'), index=False)
+    if do_pathway_metrics:
+        with open(os.path.join(out, 'cluster_enrichment.pcikle'), 'wb') as handle:
+            pickle.dump(y_cluster_enrichment, handle, protocol=pickle.HIGHEST_PROTOCOL)

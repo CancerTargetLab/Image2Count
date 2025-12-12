@@ -340,6 +340,7 @@ class GeoMXDataset(Dataset):
                             y=label,
                             cellexpr=cellexpr)
             data = torch_geometric.transforms.AddRemainingSelfLoops(attr='edge_attr', fill_value=0.0)(data)
+            data = torch_geometric.transforms.ToUndirected(merge=False)(data)
             torch.save(data, os.path.join(self.processed_path, f"graph_{file_prefix}.pt"))
         else: 
             raise Exception(f'File {file} has no Expression data in {self.label_data}!!!')
