@@ -208,7 +208,8 @@ def visualize_cell_expression(value_dict, IDs, exps, name, figure_dir, cell_shap
         adata.obs['leiden'] = -1
         adata.var_names = exps
         adata.var['spearman_genes'] = adata.var_names.isin(spearman_genes)
-        adata.write('out/'+name+'_all.h5ad')
+        if not os.path.exists('out/'+name+'_all.h5ad'):
+            adata.write('out/'+name+'_all.h5ad')
 
         adata = sc.AnnData(counts[cell_index])
         if cell_class is not None:
