@@ -1,0 +1,81 @@
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Arguments for image model")
+
+    # Arguments for Image preprocessing
+    parser.add_argument("--preprocess_dir", type=str, default="data/raw/p2106",
+                        help="Directory in which .tiff files are for preprocessing")
+    parser.add_argument("--preprocess_channels", type=str, default="",
+                        help="Indices of channels to preprocess, seperated by , and empty if all channels")
+    parser.add_argument("--calc_mean_std", action="store_true", default=False,
+                        help="Wether or not to calculate mean and std of cell cut outs")
+    parser.add_argument("--cell_cutout", type=int, default=20,
+                        help="Size*Size cutout of cell, centered on Centroid Cell position")
+    parser.add_argument("--preprocess_workers", type=int, default=1,
+                        help="Number of Workers to use for cell cutout")
+    parser.add_argument("--image_preprocess", action="store_true", default=False,
+                        help="Wether or not to preprocess images via ZScore normalisation")
+
+    # General Model Arguments
+    parser.add_argument("--deterministic", action="store_true", default=False,
+                        help="Wether or not to run NNs deterministicly")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Seed for random computations")
+    parser.add_argument("--root_dir", type=str, default="data/",
+                        help="Where to find the raw/ and processed/ dirs")
+    parser.add_argument("--raw_subset_dir", type=str, default="TMA1_preprocessed",
+                        help="How the subdir in raw/ and processed/ is called")
+    parser.add_argument("--batch_size", type=int, default=256,
+                        help="Number of elements per Batch")
+    parser.add_argument("--epochs", type=int, default=100,
+                        help="Number of epochs for which to train")
+    parser.add_argument("--num_workers", type=int, default=1,
+                        help="Number of worker processes to be used(loading data etc)")
+    parser.add_argument("--lr", type=float, default=0.1,
+                        help="Learning rate of model")
+    parser.add_argument("--weight_decay", type=float, default=5e-6,
+                        help="Weight decay of optimizer")
+    parser.add_argument("--early_stopping", type=int, default=100,
+                        help="Number of epochs after which to stop model run without improvement to val loss")
+    parser.add_argument("--output_name", type=str, default="out/models/image_contrast.pt",
+                        help="Path/name of moel for saving")
+
+    # Arguments for image model
+    parser.add_argument("--warmup_epochs", type=int, default=10,
+                        help="Number of Epochs in which learning rate gets increased")
+    parser.add_argument("--embed", type=int, default=256,
+                        help="Linear net size used to embed data")
+    parser.add_argument("--contrast", type=int, default=124,
+                        help="Linear net size on which to calculate the contrast loss")
+    parser.add_argument("--crop_factor", type=float, default=0.5,
+                        help="Cell Image crop factor for Image augmentation")
+    parser.add_argument("--resnet", type=str, default="18",
+                        help="What ResNet model to choose, on of 18, 34, 50 and 101")
+    parser.add_argument("--n_clusters_image", type=int, default=1,
+                        help="Number of Clusters to use for KMeans when only use when >= 1")
+    parser.add_argument("--train_image_model", action="store_true", default=False,
+                        help="Wether or not to train the Image model")
+    parser.add_argument("--embed_image_data", action="store_true", default=False,
+                        help="Wether or not to embed data with a given Image model")
+    return parser.parse_args()
+
+
+def main(**args):
+    if args['image_preprocess']:
+        from src.utils.image_preprocess import image_preprocess as ImagePreprocess
+        ImagePreprocess(path=args['preprocess_dir'], 
+                        img_channels=args['preprocess_channels'],
+                        do_mean_std=args['calc_mean_std'],
+                        cell_cutout=args['cell_cutout'],
+                        num_processes=args['preprocess_workers'])
+    if args['train_image_model']:
+        from src.run.CellContrastTrain import train as ImageTrain
+        ImageTrain(**args)
+    if args['embed_image_data']:
+        from src.run.CellContrastEmbed import embed as CellContrastEmbed
+        CellContrastEmbed(**args)
+
+if __name__ == '__main__':
+    args = vars(parse_args())
+    main(**args)
