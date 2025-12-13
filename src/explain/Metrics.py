@@ -191,8 +191,12 @@ def _metrics(x,
     k_stat, _ = per_gene_corr(x, y, mean=False, method='kendalltau')
 
     if do_performance_metrics:
-        performance_metrics['mean_edge_l'][f'sim_{cluster_key}_{name}'] = sim
-        performance_metrics['mean_edge_l'][f'js_div_{cluster_key}_{name}'] = js_div
+        if not cluster_key == 'sc':
+            performance_metrics['mean_edge_l'][f'sim_{cluster_key}_{name}'] = sim
+            performance_metrics['mean_edge_l'][f'js_div_{cluster_key}_{name}'] = js_div
+        else:
+            performance_metrics['mean_edge_l_sc'][f'sim_{cluster_key}_{name}'] = sim
+            performance_metrics['mean_edge_l_sc'][f'js_div_{cluster_key}_{name}'] = js_div
         performance_metrics['SNR'][f'mi_{cluster_key}_{name}'] = mi
         performance_metrics['SNR'][f'dist_{cluster_key}_{name}'] = dist.mean(axis=0)
         performance_metrics['SNR'][f'js_div_{cluster_key}_{name}'] = js_div
