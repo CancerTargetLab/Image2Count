@@ -25,6 +25,9 @@ def metrics(sub_entrie, appendix):
     ssim = np.empty(len(sub_entrie), dtype=np.float64)
     ari = np.empty(len(sub_entrie), dtype=np.float64)
     nmi = np.empty(len(sub_entrie), dtype=np.float64)
+    tf_cov = np.empty(len(sub_entrie), dtype=np.float64)
+    pw_cov = np.empty(len(sub_entrie), dtype=np.float64)
+    hm_cov = np.empty(len(sub_entrie), dtype=np.float64)
     for i, entrie in enumerate(sub_entrie):
         df = pd.read_csv(os.path.join(path, entrie), index_col=0)
         sim[i] = df.loc[df['Metric']=='CosSim']['Mean'].values[0]
@@ -38,11 +41,19 @@ def metrics(sub_entrie, appendix):
         if 'ARI' in df.columns.to_list():
             ari[i] = df.loc[df['Metric']=='ARI']['Mean'].values[0]
             nmi[i] = df.loc[df['Metric']=='NMI']['Mean'].values[0]
+        if 'tf_cov' in df.columns.to_list():
+            tf_cov[i] = df.loc[df['Metric']=='tf_cov']['Mean'].values[0]
+            pw_cov[i] = df.loc[df['Metric']=='pw_cov']['Mean'].values[0]
+            hm_cov[i] = df.loc[df['Metric']=='hm_cov']['Mean'].values[0]
     mean_data = {
         'Metric': ['Pearson', 'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE', 'JensenShannonDiv', 'SSIM'],
         'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim.mean()],
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), ssim.std()],
     }
+    if 'tf_cov' in df.columns.to_list():
+        mean_data['Metric'].extend(['tf_cov', 'pw_cov', 'hm_cov'])
+        mean_data['Mean'].extend([tf_cov.mean(), pw_cov.mean(), hm_cov.mean()])
+        mean_data['Std'].extend([tf_cov.std(), pw_cov.std(), hm_cov.std()])
     if 'ARI' in df.columns.to_list():
         mean_data['Metric'].extend(['ARI', 'NMI'])
         mean_data['Mean'].extend([ari.mean(), nmi.mean()])

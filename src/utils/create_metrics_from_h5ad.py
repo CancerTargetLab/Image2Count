@@ -45,7 +45,8 @@ if do_performance_metrics:
     performance_metrics = {
         'SNR': pd.DataFrame(),
         'abundance': pd.DataFrame(),
-        'mean_edge_l': pd.DataFrame()
+        'mean_edge_l': pd.DataFrame(),
+        'mean_edge_l_sc': pd.DataFrame()
     }
 
 if filter_vars:
@@ -94,7 +95,7 @@ def create_metrics(path, target_df):
                     prepare_performance_metrics(var_names, subset_y, f'{hops}', mean_edge_l)
                 metrics(subset_x, subset_y, entrie+f'_{hops}', f'{hops}', var_names)
             if do_performance_metrics:
-                mean_edge_l = create_subgraphs(x, target_df, 0, -1, var_names)
+                _, _, mean_edge_l = create_subgraphs(x, target_df, 0, -1, var_names)
             prepare_performance_metrics(var_names, subset_y, 'sc', mean_edge_l)
             metrics(x, y, entrie, 'sc', var_names)
 
@@ -107,6 +108,8 @@ def create_subgraphs(pred, target_df, num_subgraphs_per_graph, hops, columns):
         subgraphs_x_m_edge_l = np.empty((target_df['Image'].unique().shape[0]*num_subgraphs_per_graph,))
     else:
         subgraphs_x_m_edge_l = np.empty((target_df.shape[0]))
+        subgraphs_x = 0
+        subgraphs_y = 0
     for g, subset_name in enumerate(target_df['Image'].unique().tolist()):
         subset = target_df.loc[target_df['Image']==subset_name]
         subset_x = pred[target_df['Image']==subset_name]
@@ -165,7 +168,10 @@ def prepare_performance_metrics(var_names, y, hops, mean_edge_l):
         performance_metrics['abundance']['markers'] = var_names
     performance_metrics['SNR'][f'SNR{hops}'] = y.mean(axis=0)/(y.std(axis=0)+1e-12)
     performance_metrics['abundance'][f'abundance_{hops}'] = np.mean(np.log1p(y), axis=0)
-    performance_metrics['mean_edge_l'][f'mean_edge_l_{hops}'] = mean_edge_l
+    if hops == 'sc':
+        performance_metrics['mean_edge_l_sc'][f'mean_edge_l_{hops}'] = mean_edge_l
+    else:
+        performance_metrics['mean_edge_l'][f'mean_edge_l_{hops}'] = mean_edge_l
 
 def metrics(x, y, name, cluster_key, var_names):
     sim = similarity(torch.from_numpy(x), torch.from_numpy(y)).numpy()
@@ -228,8 +234,16 @@ def metrics(x, y, name, cluster_key, var_names):
         mean_data['Mean'].extend([ari, nmi])
         mean_data['Std'].extend([0, 0, ]) # We ignore std values for these metrics as we do not calculate multiple
         if do_performance_metrics:
-            performance_metrics['mean_edge_l'][f'ari_{cluster_key}_{name}'] = ari
-            performance_metrics['mean_edge_l'][f'nmi_{cluster_key}_{name}'] = nmi
+            if not cluster_key == 'sc':
+                performance_metrics['mean_edge_l'][f'ari_{cluster_key}_{name}'] = ari
+                performance_metrics['mean_edge_l'][f'nmi_{cluster_key}_{name}'] = nmi
+                performance_metrics['mean_edge_l'][f'true_cluster_{cluster_key}_{name}'] = y_cluster
+                performance_metrics['mean_edge_l'][f'pred_cluster_{cluster_key}_{name}'] = x_cluster
+            else:
+                performance_metrics['mean_edge_l_sc'][f'ari_{cluster_key}_{name}'] = ari
+                performance_metrics['mean_edge_l_sc'][f'nmi_{cluster_key}_{name}'] = nmi
+                performance_metrics['mean_edge_l_sc'][f'true_cluster_{cluster_key}_{name}'] = y_cluster
+                performance_metrics['mean_edge_l_Sc'][f'pred_cluster_{cluster_key}_{name}'] = x_cluster
     df = pd.DataFrame(mean_data)
     df.to_csv(os.path.join(out, 'avg_metrics_'+name+'.csv'))
 

@@ -151,13 +151,15 @@ def per_area_ssim(x, y):
     """
     return structural_similarity(x, y, data_range=max(x.max(), y.max()), channel_axis=1)
 
-def per_cluster_key_coverage(predicted_dict, true_dict, top_k=5):
+def per_cluster_key_coverage(predicted_dict, true_dict):
     identified = 0
+    true_total = 0
     for key in true_dict.keys():
+        true_total += len(true_dict[key]['name'])
         for val in predicted_dict[key]['name']:
             if val in true_dict[key]['name']:
                 identified += 1
-    return identified / (5 * len(list(true_dict.keys())))
+    return identified / true_total
 
 def corr_all2all(adata, method='pearsonr'):
     """
@@ -192,7 +194,7 @@ def cluster_cell_expression(x):
                 n_comps=adata.var_names.shape[0]-1 if adata.var_names.shape[0]<51 else 50,
                 )
     sc.pp.neighbors(adata, n_neighbors=10, n_pcs=adata.varm['PCs'].shape[1])
-    sc.tl.leiden(adata, resolution=0.5, flavor="igraph", n_iterations=2)
+    sc.tl.leiden(adata, resolution=0.5, flavor="igraph", n_iterations=4)
     return adata.obs['leiden'].values
 
 def per_cluster_pathways(x, var_names, clusters, top_k=5):
@@ -203,7 +205,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.log1p(adata)
 
     collectri = dc.op.collectri(organism='human')
-    dc.mt.ulm(data=adata, net=collectri, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    dc.mt.ulm(data=adata, net=collectri, tmin=2 if adata.var_names.shape[0]<400 else 5)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
@@ -214,15 +216,15 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .drop_duplicates('name')
         .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
         .apply(lambda x: {
-            'name': x['name'],
-            'stat': x['stat'],
-            'pval': x['pval'],
-            'padj': x['padj']
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
         })
         .to_dict())
     
     progeny = dc.op.progeny(organism="human")
-    dc.mt.ulm(data=adata, net=progeny, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    dc.mt.ulm(data=adata, net=progeny, tmin=2 if adata.var_names.shape[0]<400 else 5)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
@@ -233,15 +235,15 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .drop_duplicates('name')
         .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
         .apply(lambda x: {
-            'name': x['name'],
-            'stat': x['stat'],
-            'pval': x['pval'],
-            'padj': x['padj']
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
         })
         .to_dict())
 
     hallmark = dc.op.hallmark(organism='human')
-    dc.mt.ulm(data=adata, net=hallmark, tmin=1 if adata.var_names.shape[0]<400 else 5)
+    dc.mt.ulm(data=adata, net=hallmark, tmin=2 if adata.var_names.shape[0]<400 else 5)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
@@ -252,10 +254,10 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .drop_duplicates('name')
         .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
         .apply(lambda x: {
-            'name': x['name'],
-            'stat': x['stat'],
-            'pval': x['pval'],
-            'padj': x['padj']
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
         })
         .to_dict())
 
