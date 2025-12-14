@@ -29,7 +29,7 @@ Now we are ready to go!
 ## Preprocessing
 The first process is to normalize Image data and uniformly cut out Cells:  
 ```sh
-python -m main --image_preprocess --preprocess_dir 'data/raw/{EXPERIMENT NAME}/[train/test]/' --cell_cutout 34 --preprocess_workers 26 --preprocess_channels 0,10,14,19 --calc_mean_std
+python -m cellcontrast --image_preprocess --preprocess_dir 'data/raw/{EXPERIMENT NAME}/[train/test]/' --cell_cutout 34 --preprocess_workers 26 --preprocess_channels 0,10,14,19 --calc_mean_std
 ```
 - `--image_preprocess`:  
 Wether or not to run image preprocessing.
@@ -75,7 +75,7 @@ Path/name of moel for saving.
 
 Next, we learn Visual Representations of Cells via Contrastive learning:  
 ```sh
-python -m main --train_image_model --embed_image_data --output_name 'out/models/image_contrast_model.pt' --raw_subset_dir '{EXPERIMENT NAME}' --weight_decay 1e-6 --resnet_model '18' --batch_size 4096 --epochs 100 --warmup_epochs 10 --num_workers 25 --lr 0.1 --embed 32 --contrast 16 --crop_factor 0.2 --n_clusters_image 20
+python -m cellcontrast --train_image_model --embed_image_data --output_name 'out/models/image_contrast_model.pt' --raw_subset_dir '{EXPERIMENT NAME}' --weight_decay 1e-6 --resnet_model '18' --batch_size 4096 --epochs 100 --warmup_epochs 10 --num_workers 25 --lr 0.1 --embed 32 --contrast 16 --crop_factor 0.2 --n_clusters_image 20
 ```
 
 - `--train_image_model`:  
@@ -99,7 +99,7 @@ We extract visual representations after training a model to learn visual represe
 
 Next, we learn what each Cell contributes to the Count Data of an Image:  
 ```sh
-python -m main --train_gnn --embed_gnn_data --output_name 'out/models/image_graph_model.pt' --output_graph_embed '/out/graph_model/' --init_image_model 'out/models/image_contrast_model.pt' --init_graph_model 'out/models/graph_model.pt' --root_dir 'data/' --raw_subset_dir '{EXPERIMENT NAME}' --label_data '{label}.csv'  --batch_size 64 --epochsh 1000 --num_workers 12 --lr 0.005 --early_stopping 50 --weight_decay 1e-4 --train_ratio 0.6 --val_ratio 0.2 --node_dropout 0.0 --edge_dropout 0.3 --cell_pos_jitter 40 --cell_n_knn 6 --subgraphs_per_graph 0 --num_hops_subgraph 0 --model_type 'Image2Count' --data_use_log_graph --graph_mse_mult 1 --graph_cos_sim_mult 1  --lin_layers 3 --gat_layers 3 --num_node_features 32 --num_edge_features 1 --num_embed_features 128 --heads 4 --embed_dropout 0.1 --conv_dropout 0.1 --num_cfolds 0
+python -m cellprediction --train_gnn --embed_gnn_data --output_name 'out/models/image_graph_model.pt' --output_graph_embed '/out/graph_model/' --init_image_model 'out/models/image_contrast_model.pt' --init_graph_model 'out/models/graph_model.pt' --root_dir 'data/' --raw_subset_dir '{EXPERIMENT NAME}' --label_data '{label}.csv'  --batch_size 64 --epochsh 1000 --num_workers 12 --lr 0.005 --early_stopping 50 --weight_decay 1e-4 --train_ratio 0.6 --val_ratio 0.2 --node_dropout 0.0 --edge_dropout 0.3 --cell_pos_jitter 40 --cell_n_knn 6 --subgraphs_per_graph 0 --num_hops_subgraph 0 --model_type 'Image2Count' --data_use_log_graph --graph_mse_mult 1 --graph_cos_sim_mult 1  --lin_layers 3 --gat_layers 3 --num_node_features 32 --num_edge_features 1 --num_embed_features 128 --heads 4 --embed_dropout 0.1 --conv_dropout 0.1 --num_cfolds 0
 ```
 
 - `--train_gnn`:  
@@ -161,11 +161,59 @@ Percentage of dropout chance between layers.
 
 After training a model to predict the Expression of Single Cells, the predicted Expression of all Single Cells in the specified directory get embeded in the specified output graph embed directory. Each graph gets embedded seperatly in shape `(Number of Cells, Number of Genes/Transcripts/Proteins/...)`. It is important to note that models trained on subgraphs will embed subgraphs, if the embedding is not done in a seperate call where `--subgraphs_per_graph` is set to 0. Subgraphs are stored in `processed/{EXPERIMENT NAME}/subgraphs/` if created.
 
+## Create and save an sc.AnnData object of model prediction
+
+```sh
+python -m cellevaluation --merge --embed_dir out/graph_model/ --h5ad_dir 'out/' --vis_label_data {label}.csv --processed_subset_dir dataset/test --vis_name graph_model --embed_to_h5ad
+```  
+
+- `--merge`:  
+Merge crossfold model predictions by calculating the mean. 
+- `embed_dir`:  
+Directory in which data is embedded.
+- `--h5ad_dir`:  
+Directory in which to save the sc.AnnData obeject.
+- `--vis_label_data`:  
+Label csv.
+- `--processed_subset_dir`:  
+Processed subset dir in which test data is.
+- `--vis_name`:  
+Name of the sc.AnnData model that is saved. `_all.h5ad` is appended when saving.
+- `--embed_to_h5ad`:  
+Wether or not to embed data to h5ad.
+
+## Create Metrics of model performance
+
+```sh
+python -m cellevaluation --vis_label_data dataset/measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'cosmx_lin_[0-5]_all.h5ad' --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics --do_pathway_metrics --performance_metrics --figure_dir figures/cosmx/lin/metrics/
+```  
+
+- `--vis_label_data`:  
+Label or measurement csv, depending on if cellular ground truth is available.
+- `--h5ad_dir`:  
+Directory in which to save the sc.AnnData obeject.
+- `__vis_name_pattern`:  
+Pattern which describes `.h5ad` files which to consider. Iterates over all if multiple and creates averages of performance.
+- `--num_subgraphs_per_graph`:  
+Number of subgraphs per graph to create if ground truth available and niche performance is to be analyzed.
+- `--num_hops_per_subgraph`:  
+Number of hops to create niches for evaluation. Can be multiple, which are saved accordingly.
+ `--do_clusterin_metrics`:  
+Wether or not to calculate clustering metrics ARI, NMI.
+ `--do_performance_metrics`:  
+Wether or not to save performance metrics per marker/cell/niche.
+ `--do_pathway_metrics`:  
+Wether or not to do enrichment analysis for multiple pathway or tf databases. Only done if `--do_clustering_metrics`.
+`--performance_metrics`:  
+Wether or not to calculate metrics.
+`--figure_dir`:  
+Directory in which performance metrics are saved.
+
 ## Visualizing Model runs
 
 Model runs can be visualized as follows:  
 ```sh
-python -m main --visualize_model_run --model_path 'out/models/graph_model.pt' --output_model_name 'Image Contrast Model' --figure_model_dir 'figures/graph_model/' --is_cs
+python -m cellevaluation --visualize_model_run --model_path 'out/models/graph_model.pt' --output_model_name 'Image Contrast Model' --figure_model_dir 'figures/graph_model/' --is_cs
 ```
 
 - `--visualize_model_run`:  
@@ -183,7 +231,7 @@ Wether or not Cosine Similarity is used or Contrast Loss.
 
 The predicted single cell Expression can be visualized:
 ```sh
-python -m main --visualize_expression --vis_label_data '{label}.csv' --processed_subset_dir '{EXPERIMENT NAME}/test' --figure_dir 'figures/graph_model/' --embed_dir 'out/graph_model/' --vis_select_cells 50000 --vis_name '_graph_model' --has_expr_data --merge
+python -m cellevaluation --visualize_expression --vis_label_data '{label}.csv' --processed_subset_dir '{EXPERIMENT NAME}/test' --figure_dir 'figures/graph_model/' --embed_dir 'out/graph_model/' --vis_select_cells 50000 --vis_name '_graph_model' --has_expr_data --merge
 ```
 
 - `--visualize_expression`:  
@@ -209,7 +257,7 @@ Wether or not to merge predictions of multiple models in seperate dirs in embed_
 
 The predicted single cell Expression can be also visualized on the Images themselfs:  
 ```sh
-python -m main --visualize_image --vis_img_raw_subset_dir '{EXPERIMENT NAME}' --name_tiff 'CRC02.ome.tif' --figure_img_dir 'figures/graph_model/' --vis_protein 'CD45,CD8,Keratin,Ki67,Fibronectin,Some.Name' --vis_img_xcoords 0 0 --vis_img_ycoords 0 0 --vis_all_channels --vis_name '_graph_model.h5ad' --vis_name_og 'original_data.h5ad'
+python -m cellevaluation --visualize_image --vis_img_raw_subset_dir '{EXPERIMENT NAME}' --name_tiff 'CRC02.ome.tif' --figure_img_dir 'figures/graph_model/' --vis_protein 'CD45,CD8,Keratin,Ki67,Fibronectin,Some.Name' --vis_img_xcoords 0 0 --vis_img_ycoords 0 0 --vis_all_channels --vis_name '_graph_model.h5ad' --vis_name_og 'original_data.h5ad'
 ```
 
 - `--visualize_image`:  
