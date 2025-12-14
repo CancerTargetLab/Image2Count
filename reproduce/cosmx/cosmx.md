@@ -46,6 +46,7 @@ cd ../../../../
 mkdir data/raw/cosmx/train
 mdkir data/raw/cosmx/test
 ln -s path/to/data/raw/cosmx/raw/cosmx_measurements_flipped_y.csv path/to/data/raw/cosmx/
+ln -s path/to/data/raw/cosmx/raw/cosmx_measurements_flipped_y.csv path/to/data/raw/
 ln -s path/to/data/raw/cosmx/raw/cosmx_label.csv path/to/data/raw/cosmx/
 ln -s path/to/data/raw/cosmx/raw/Lung6/*/*_Z001.TIF path/to/data/raw/cosmx/test/
 ln -s path/to/data/raw/cosmx/raw/Lung13/*/*_Z001.TIF path/to/data/raw/cosmx/test/
@@ -59,7 +60,7 @@ Now we can execute Image2Count:
 ./reproduce/cosmx/cosmx.sh
 ```
 
-To get (more accurate?) single cell correlation we impute false zero counts through with the dca method:  
+To get (more accurate?) single cell correlation we impute false zero counts with the dca method:  
 ```sh
 conda create -n dca
 conda activate dca
@@ -72,45 +73,9 @@ ln -s path/to/data/raw/cosmx/*npy data/raw/cosmx_dca/
 ln -s path/to/data/raw/cosmx/train/* data/raw/cosmx_dca/train/
 ln -s path/to/data/raw/cosmx/test/* data/raw/cosmx_dca/test/
 ln -s path/to/data/raw/cosmx_measuremens_flipped_y_dca.csv data/raw/cosmx_dca/
+ln -s path/to/data/raw/cosmx_measuremens_flipped_y_dca.csv data/raw/
 ./reproduce/cosmx/dca.sh
 ```
 Please know that getting dca to work took some manual work adjusting version numbers of packages, you might need to do the sam eif you run into errors.  
 
-To reproduce single cell and subgraph metrics you will need to modify `src/utils/create_metrics_from_h5ad` as follows:  
-```py
-path = 'path/to/crossvalidation/model/h5ad/saves/'  # Path to dir containing .h5ad files of predicted data
-target = 'csv/containing/true/expression/data.csv'
-num_subgraphs_per_graph = 900   # As named
-num_hops_per_subgraph = []  # List of hops to expand cellular neighbourhood, e.g. [1, 2, 3, 5, 8, 11]
-
-name = 'regular_expression_pattern_of_crossval_model_h5ad_files.h5ad'   # As assigned
-out = 'figures/path/to/save/'   # As assigned
-
-sum_by_graph = False    # If you use a path pointing to measurements.csv of an experiemnt, meaning measurements.csv
-                        # contains per cell gene expression, set this to False. If path points to labels.csv, containing
-                        # expression per image, set this to True.
-```  
-This should be turned to:  
-```py
-path = 'out/'
-target = 'path/to/data/raw/cosmx/cosmx_measuremens_flipped_y.csv'
-num_subgraphs_per_graph = 36 
-num_hops_per_subgraph = [1, 2, 3, 5, 8, 11]  
-
-name = 'cosmx_6_6_[0-9]_all.h5ad'   #cosmx_6_6_mean_all.h5ad for the merged prediction data
-out = 'figures/cosmx/6_6/'
-
-sum_by_graph = False
-
-``` 
-
-This file creates `.csv` files for each model for all number of neighbourhood hops (hop is identified as the number before `[].csv`, otherwise it is a single cell metric file). Model name is in the file name. Metrics include Pearson, Spearman and Kendall correlation, Mutual Information, Cosinse Similarity and Mean squared error of log1p expression values. Needs to be executed once to create metrics for each model, and once to create metrics for the merged model predictions. Every time you execute `src/utils/create_metrics_from_h5ad` you have to save `.csv` files in a new directory, otherwise calculated metrics in the next step might be wrong.  
-To give an average model performance over all crossvalidation runs run `src/utils/mean_subgraph_metrics.py` by changing code as follows:
-```py
-path = 'figures/cosmx/6_6/'
-subgraphs = [1, 2, 3, 5, 8, 11]
-out = 'figures/cosmx/6_6/'
-```  
-This will create `.csv` files for each neighbourhood hop size with avage performance metrics for all crossvalidation model runs.  
-
-`src/utils/create_metrics_from_h5ad` and `src/utils/mean_subgraph_metrics.py` need to be executed by model type ( so 3*2 times: for the gat, ffw and lin model and their mean predictions by changing the `name` varible appropriatly, as well as where figures are saved). For the evaluation with dca imputed counts change `target = 'path/to/data/raw/cosmx/cosmx_measuremens_flipped_y_dca.csv'` , `name` should be the same as for the non dca evalutation. Change path of where figures are saved as well : `figures/cosmx/6_6/mean/dca/`.
+This file creates `.csv` files for each model for all number of neighbourhood hops (hop is identified as the number before `[].csv`, otherwise it is a single cell metric file). Model name is in the file name. Metrics include Pearson, Spearman and Kendall correlation, Mutual Information, Cosinse Similarity and Mean squared error of log1p expression values and more. 
