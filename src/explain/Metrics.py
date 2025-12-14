@@ -1,7 +1,7 @@
 import scanpy as sc
 import os
 import re
-import pickle
+import json
 import numpy as np
 import pandas as pd
 import torch
@@ -224,18 +224,32 @@ def _metrics(x,
         else:
             y_cluster = y_clusters[cluster_key]
         if do_pathway_metrics:
-            if cluster_key not in y_cluster_enrichment.keys():
+            if f'yy_{cluster_key}' not in y_cluster_enrichment.keys():
                 y_enrichment = per_cluster_pathways(y.copy(), var_names, clusters=y_cluster, top_k=5)
-                y_cluster_enrichment[cluster_key] = y_enrichment
+                y_cluster_enrichment[f'yy_{cluster_key}'] = y_enrichment
             else:
-                y_enrichment = y_cluster_enrichment[cluster_key]
-            x_enrichment = per_cluster_pathways(x.copy(), var_names, clusters=y_cluster, top_k=5)
-            y_cluster_enrichment[f'{cluster_key}_{name}'] = x_enrichment
-            tf_coverage = per_cluster_key_coverage(x_enrichment['CollecTRI'], y_enrichment['CollecTRI'])
-            pw_coverage = per_cluster_key_coverage(x_enrichment['PROGENy'], y_enrichment['PROGENy'])
-            hm_coverage = per_cluster_key_coverage(x_enrichment['hallmark_msigdb'], y_enrichment['hallmark_msigdb'])
-            ro_coverage = per_cluster_key_coverage(x_enrichment['reactome_msigdb'], y_enrichment['reactome_msigdb'])
-            kegg_coverage = per_cluster_key_coverage(x_enrichment['kegg_msigdb'], y_enrichment['kegg_msigdb'])
+                y_enrichment = y_cluster_enrichment[f'yy_{cluster_key}']
+            xy_enrichment = per_cluster_pathways(x.copy(), var_names, clusters=y_cluster, top_k=5)
+            x_enrichment = per_cluster_pathways(x.copy(), var_names, clusters=x_cluster, top_k=5)
+            yx_enrichment = per_cluster_pathways(y.copy(), var_names, clusters=x_cluster, top_k=5)
+            y_cluster_enrichment[f'xy_{cluster_key}_{name}'] = xy_enrichment
+            y_cluster_enrichment[f'xx_{cluster_key}_{name}'] = x_enrichment
+            y_cluster_enrichment[f'yx_{cluster_key}_{name}'] = yx_enrichment
+            tf_coverage = per_cluster_key_coverage(xy_enrichment['CollecTRI'],
+                            y_enrichment['CollecTRI'])/2 + per_cluster_key_coverage(yx_enrichment['CollecTRI'],
+                                                            x_enrichment['CollecTRI'])/2
+            pw_coverage = per_cluster_key_coverage(xy_enrichment['PROGENy'],
+                            y_enrichment['PROGENy'])/2 + per_cluster_key_coverage(yx_enrichment['PROGENy'],
+                                                            x_enrichment['PROGENy'])/2
+            hm_coverage = per_cluster_key_coverage(xy_enrichment['hallmark_msigdb'],
+                                    y_enrichment['hallmark_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['hallmark_msigdb'],
+                                                                            x_enrichment['hallmark_msigdb'])/2
+            ro_coverage = per_cluster_key_coverage(xy_enrichment['reactome_msigdb'],
+                            y_enrichment['reactome_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['reactome_msigdb'],
+                                                                    x_enrichment['reactome_msigdb'])/2
+            kegg_coverage = per_cluster_key_coverage(xy_enrichment['kegg_msigdb'],
+                                y_enrichment['kegg_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['kegg_msigdb'],
+                                                                    x_enrichment['kegg_msigdb'])/2
             mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb'])
             mean_data['Mean'].extend([ari, nmi, tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
             mean_data['Std'].extend([0, 0, 0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
@@ -371,5 +385,5 @@ def Metrics(path,
         for key in performance_metrics.keys():
             performance_metrics[key].to_csv(os.path.join(out, 'performance_metrics.csv'), index=False)
         if do_pathway_metrics:
-            with open(os.path.join(out, 'cluster_enrichment.pcikle'), 'wb') as handle:
-                pickle.dump(y_cluster_enrichment, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open(os.path.join(out, 'cluster_enrichment.json'), 'wb') as handle:
+                json.dump(y_cluster_enrichment, handle, indent=4)

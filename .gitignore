@@ -15,6 +15,7 @@
 *.npz
 *.h5ad
 *.xlsx
+*.json
 *.vscode*
 #data/
 __pycache__*

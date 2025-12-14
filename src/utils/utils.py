@@ -151,13 +151,13 @@ def per_area_ssim(x, y):
     """
     return structural_similarity(x, y, data_range=max(x.max(), y.max()), channel_axis=1)
 
-def per_cluster_key_coverage(predicted_dict, true_dict):
+def per_cluster_key_coverage(predicted_dict, true_dict, top_k=5):
     identified = 0
     true_total = 0
     for key in true_dict.keys():
-        true_total += len(true_dict[key]['name'])
-        for val in predicted_dict[key]['name']:
-            if val in true_dict[key]['name']:
+        true_total += len(true_dict[key]['name'][:top_k])
+        for val in predicted_dict[key]['name'][:top_k]:
+            if val in true_dict[key]['name'][:top_k]:
                 identified += 1
     return identified / true_total
 
