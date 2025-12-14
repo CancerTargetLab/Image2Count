@@ -178,7 +178,6 @@ def createH5AD(path,
                processed_dir='TMA1_processed',
                embed_dir='out/',
                label_data='label_data.csv',
-               figure_dir='figures/',
                name='_cells',):
     """
     processed_dir (str): Dir name in data/processed/ containing torch_geometric graphs
@@ -192,6 +191,4 @@ def createH5AD(path,
     value_dict = get_predicted_graph_expression(value_dict, embed_dir)
     value_dict, cell_shapes = get_predicted_cell_expression(value_dict, embed_dir)
     IDs, exps = get_patient_ids(label_data, list(value_dict.keys()))
-    if not os.path.exists(figure_dir) and not os.path.isdir(figure_dir):
-        os.makedirs(figure_dir)
-    combine_data(value_dict, IDs, exps, name, figure_dir, cell_shapes, path)
+    combine_data(value_dict, IDs, exps, name, cell_shapes, path)

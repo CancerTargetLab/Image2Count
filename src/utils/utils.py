@@ -260,8 +260,63 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
             'padj': x['padj'].to_list()
         })
         .to_dict())
+    
+    msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')
+    reactome = msigdb[msigdb['collection']=='reactome_pathways']
+    reactome = reactome[~reactome.duplicated(('genese', 'genesymbol'))]
+    geneset_size = reactome.groupby('geneset').size()
+    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
+    reactome = reactome[reactome['geneset'].isin(ulm_genesets)]
+    reactome = reactome.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
+    reactome = reactome[['source', 'target']]
+    dc.mt.ulm(data=adata, net=reactome, tmin=2 if adata.var_names.shape[0]<400 else 5)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    reactome_source_markers = (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
+        })
+        .to_dict())
 
-    return {'tf': tf_source_markers, 'pw': pw_source_markers, 'hm': hall_mark_source_markers}
+    kegg = msigdb[msigdb['collection']=='kegg_pathways']
+    kegg = kegg[~kegg.duplicated(('geneset', 'genesymbol'))]
+    geneset_size = kegg.groupby('geneset').size()
+    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
+    kegg = kegg[kegg['geneset'].isin(ulm_genesets)]
+    kegg = kegg.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
+    kegg = kegg[['source', 'target']]
+    dc.mt.ulm(data=adata, net=kegg, tmin=2 if adata.var_names.shape[0]<400 else 5)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    kegg_source_markers = (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
+        })
+        .to_dict())
+
+    return {'CollecTRI': tf_source_markers, 
+            'PROGENy': pw_source_markers,
+            'hallmark_msigdb': hall_mark_source_markers,
+            'reactome_msigdb': reactome_source_markers,
+            'kegg_msigdb': kegg_source_markers}
 
 def avg_cell_n(path):
       """

@@ -96,7 +96,6 @@ def main(**args):
                    processed_dir=args['processed_subset_dir'],
                    embed_dir=args['embed_dir'],
                    label_data=args['vis_label_data'],
-                   figure_dir=args['figure_dir'],
                    name=args['vis_name'])
     if args['performance_metrics']:
         from src.explain.Metrics import Metrics

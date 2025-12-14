@@ -68,6 +68,10 @@ def _create_metrics(path,
                         out=out)
             if do_performance_metrics:
                 _, _, mean_edge_l = _create_subgraphs(x, target_df, 0, -1, var_names)
+            is_g_zero = np.sum(y, axis=-1) > 0
+            x = x[is_g_zero]
+            y = y[is_g_zero]
+            mean_edge_l = mean_edge_l[is_g_zero]
             _prepare_performance_metrics(var_names, y, 'sc', mean_edge_l)
             _metrics(x=x,
                     y=y,
@@ -183,9 +187,6 @@ def _metrics(x,
     js_div = per_area_js_div(x, y)
     mi = per_gene_mi(x, y)
     dist = mse(torch.log(torch.from_numpy(x)+1), torch.log(torch.from_numpy(y)+1)).numpy()
-    is_g_zero = np.sum(y, axis=-1) > 0
-    x = x[is_g_zero]
-    y = y[is_g_zero]
     p_stat, _ = per_gene_corr(x, y, mean=False, method='pearsonr')    
     s_stat, _ = per_gene_corr(x, y, mean=False, method='spearmanr')
     k_stat, _ = per_gene_corr(x, y, mean=False, method='kendalltau')
@@ -230,12 +231,14 @@ def _metrics(x,
                 y_enrichment = y_cluster_enrichment[cluster_key]
             x_enrichment = per_cluster_pathways(x.copy(), var_names, clusters=y_cluster, top_k=5)
             y_cluster_enrichment[f'{cluster_key}_{name}'] = x_enrichment
-            tf_coverage = per_cluster_key_coverage(x_enrichment['tf'], y_enrichment['tf'])
-            pw_coverage = per_cluster_key_coverage(x_enrichment['pw'], y_enrichment['pw'])
-            hm_coverage = per_cluster_key_coverage(x_enrichment['hm'], y_enrichment['hm'])
-            mean_data['Metric'].extend(['tf_cov', 'pw_cov', 'hm_cov'])
-            mean_data['Mean'].extend([ari, nmi, tf_coverage, pw_coverage, hm_coverage])
-            mean_data['Std'].extend([0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
+            tf_coverage = per_cluster_key_coverage(x_enrichment['CollecTRI'], y_enrichment['CollecTRI'])
+            pw_coverage = per_cluster_key_coverage(x_enrichment['PROGENy'], y_enrichment['PROGENy'])
+            hm_coverage = per_cluster_key_coverage(x_enrichment['hallmark_msigdb'], y_enrichment['hallmark_msigdb'])
+            ro_coverage = per_cluster_key_coverage(x_enrichment['reactome_msigdb'], y_enrichment['reactome_msigdb'])
+            kegg_coverage = per_cluster_key_coverage(x_enrichment['kegg_msigdb'], y_enrichment['kegg_msigdb'])
+            mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb'])
+            mean_data['Mean'].extend([ari, nmi, tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
+            mean_data['Std'].extend([0, 0, 0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
         ari = per_area_ari(x_cluster, y_cluster)
         nmi = per_area_nmi(x_cluster, y_cluster)
         mean_data['Metric'].extend(['ARI', 'NMI'])
@@ -280,6 +283,8 @@ def _mean_multiple_model_metrics(sub_entrie,
     tf_cov = np.empty(len(sub_entrie), dtype=np.float64)
     pw_cov = np.empty(len(sub_entrie), dtype=np.float64)
     hm_cov = np.empty(len(sub_entrie), dtype=np.float64)
+    ro_cov = np.empty(len(sub_entrie), dtype=np.float64)
+    kegg_cov = np.empty(len(sub_entrie), dtype=np.float64)
     for i, entrie in enumerate(sub_entrie):
         df = pd.read_csv(os.path.join(out, entrie), index_col=0)
         sim[i] = df.loc[df['Metric']=='CosSim']['Mean'].values[0]
@@ -294,18 +299,20 @@ def _mean_multiple_model_metrics(sub_entrie,
             ari[i] = df.loc[df['Metric']=='ARI']['Mean'].values[0]
             nmi[i] = df.loc[df['Metric']=='NMI']['Mean'].values[0]
         if 'tf_cov' in df.columns.to_list():
-            tf_cov[i] = df.loc[df['Metric']=='tf_cov']['Mean'].values[0]
-            pw_cov[i] = df.loc[df['Metric']=='pw_cov']['Mean'].values[0]
-            hm_cov[i] = df.loc[df['Metric']=='hm_cov']['Mean'].values[0]
+            tf_cov[i] = df.loc[df['Metric']=='CollecTRI_cov']['Mean'].values[0]
+            pw_cov[i] = df.loc[df['Metric']=='PROGENy_cov']['Mean'].values[0]
+            hm_cov[i] = df.loc[df['Metric']=='hallmark_msigdb_cov']['Mean'].values[0]
+            ro_cov[i] = df.loc[df['Metric']=='reactome_msigdb_cov']['Mean'].values[0]
+            kegg_cov[i] = df.loc[df['Metric']=='kegg_msigdb_cov']['Mean'].values[0]
     mean_data = {
         'Metric': ['Pearson', 'Spearman', 'Kendall', 'MI', 'CosSim', 'MSE', 'JensenShannonDiv', 'SSIM'],
         'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim.mean()],
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), ssim.std()],
     }
     if 'tf_cov' in df.columns.to_list():
-        mean_data['Metric'].extend(['tf_cov', 'pw_cov', 'hm_cov'])
-        mean_data['Mean'].extend([tf_cov.mean(), pw_cov.mean(), hm_cov.mean()])
-        mean_data['Std'].extend([tf_cov.std(), pw_cov.std(), hm_cov.std()])
+        mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb_cov'])
+        mean_data['Mean'].extend([tf_cov.mean(), pw_cov.mean(), hm_cov.mean(), ro_cov.mean(), kegg_cov.mean()])
+        mean_data['Std'].extend([tf_cov.std(), pw_cov.std(), hm_cov.std(), ro_cov.std(), kegg_cov.std()])
     if 'ARI' in df.columns.to_list():
         mean_data['Metric'].extend(['ARI', 'NMI'])
         mean_data['Mean'].extend([ari.mean(), nmi.mean()])
