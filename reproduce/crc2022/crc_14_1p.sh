@@ -55,12 +55,12 @@ do
 done
 
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_35_0_[0-9]_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/35_0/metrics/
 python -m cellevaluation --merge --embed_dir out/crc_14_1p_35_0/ --h5ad_dir 'out/' --vis_label_data CRC_1p_label.csv \
         --processed_subset_dir CRC_14_1p/test --vis_name crc_14_1p_35_0_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_35_0_mean_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/35_0/metrics/mean/
 python -m cellevaluation --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_14_1p/test --figure_dir figures/crc_14_1p/35_0/mean/ --merge \
         --embed_dir out/crc_14_1p_35_0/ --vis_name crc_14_1p_35_0_mean --visualize_expression --has_expr_data --raw_subset_dir CRC_14_1p
@@ -70,12 +70,12 @@ python -m cellevaluation --visualize_image --vis_name crc_14_1p_35_0_mean.h5ad -
         --vis_img_xcoords 22201 25893 --vis_img_ycoords 14729 18421 --vis_all_channels
 
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_24_6_[0-9]_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/24_6/metrics/
 python -m cellevaluation --merge --embed_dir out/crc_14_1p_24_6/ --h5ad_dir 'out/' --vis_label_data CRC_1p_label.csv \
         --processed_subset_dir CRC_14_1p/test --vis_name crc_14_1p_24_6_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_24_6_mean_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/24_6/metrics/mean/
 python -m cellevaluation --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_14_1p/test --figure_dir figures/crc_14_1p/24_6/mean/ --merge \
         --embed_dir out/crc_14_1p_24_6/ --vis_name crc_14_1p_24_6_mean --visualize_expression --has_expr_data --raw_subset_dir CRC_14_1p
@@ -85,12 +85,12 @@ python -m cellevaluation --visualize_image --vis_name crc_14_1p_24_6_mean.h5ad -
         --vis_img_xcoords 22201 25893 --vis_img_ycoords 14729 18421 --vis_all_channels
 
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_lin_[0-9]_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/lin/metrics/
 python -m cellevaluation --merge --embed_dir out/crc_14_1p_lin/ --h5ad_dir 'out/' --vis_label_data CRC_1p_label.csv \
         --processed_subset_dir CRC_14_1p/test --vis_name crc_14_1p_lin_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data CRC_1p/CRC_1p_measurements.csv --h5ad_dir 'out/' --vis_name_pattern 'crc_14_1p_lin_mean_all.h5ad' \
-        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clusterin_metrics --do_performance_metrics \
+        --num_subgraphs_per_graph 900 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics \
         --performance_metrics --figure_dir figures/crc_14_1p/lin/metrics/mean/
 python -m cellevaluation --vis_label_data CRC_1p_label.csv --processed_subset_dir CRC_14_1p/test --figure_dir figures/crc_14_1p/lin/mean/ --merge \
         --embed_dir out/crc_14_1p_lin/ --vis_name crc_14_1p_lin_mean --visualize_expression --has_expr_data --raw_subset_dir CRC_14_1p
