@@ -1,5 +1,6 @@
 import numpy as np
 import scanpy as sc
+import pandas as pd
 import decoupler as dc
 import random
 import torch
@@ -261,14 +262,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
     
-    msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')
-    reactome = msigdb[msigdb['collection']=='reactome_pathways']
-    reactome = reactome[~reactome.duplicated(('genese', 'genesymbol'))]
-    geneset_size = reactome.groupby('geneset').size()
-    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
-    reactome = reactome[reactome['geneset'].isin(ulm_genesets)]
-    reactome = reactome.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
-    reactome = reactome[['source', 'target']]
+    reactome = load_and_store_reactome_kegg('reactome')
     dc.mt.ulm(data=adata, net=reactome, tmin=2 if adata.var_names.shape[0]<400 else 5)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
@@ -287,13 +281,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
 
-    kegg = msigdb[msigdb['collection']=='kegg_pathways']
-    kegg = kegg[~kegg.duplicated(('geneset', 'genesymbol'))]
-    geneset_size = kegg.groupby('geneset').size()
-    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
-    kegg = kegg[kegg['geneset'].isin(ulm_genesets)]
-    kegg = kegg.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
-    kegg = kegg[['source', 'target']]
+    kegg = load_and_store_reactome_kegg('kegg')
     dc.mt.ulm(data=adata, net=kegg, tmin=2 if adata.var_names.shape[0]<400 else 5)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
@@ -317,6 +305,40 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
             'hallmark_msigdb': hall_mark_source_markers,
             'reactome_msigdb': reactome_source_markers,
             'kegg_msigdb': kegg_source_markers}
+
+def load_and_store_reactome_kegg(dataset):
+    if not os.path.exists(os.path.join('data', 'raw', 'msigdb')):
+        os.makedirs(os.path.join('data', 'raw', 'msigdb'))
+    pathway_csvs = os.listdir(os.path.join('data', 'raw', 'msigdb'))
+    for csv in pathway_csvs:
+        if csv.endswith('.csv') and csv.startswith(dataset):
+            return pd.read_csv(os.path.join('data', 'raw', 'msigdb', csv))
+        
+    msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')
+
+    reactome = msigdb[msigdb['collection']=='reactome_pathways']
+    reactome = reactome[~reactome.duplicated(('geneset', 'genesymbol'))]
+    geneset_size = reactome.groupby('geneset').size()
+    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
+    reactome = reactome[reactome['geneset'].isin(ulm_genesets)]
+    reactome = reactome.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
+    reactome = reactome[['source', 'target']]
+    reactome.to_csv(os.path.join('data', 'raw', 'msigdb', 'reactome.csv'), index=False, header=True)
+
+    kegg = msigdb[msigdb['collection']=='kegg_pathways']
+    kegg = kegg[~kegg.duplicated(('geneset', 'genesymbol'))]
+    geneset_size = kegg.groupby('geneset').size()
+    ulm_genesets = geneset_size.index[(geneset_size > 15) & (geneset_size < 500)]
+    kegg = kegg[kegg['geneset'].isin(ulm_genesets)]
+    kegg = kegg.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
+    kegg = kegg[['source', 'target']]
+    kegg.to_csv(os.path.join('data', 'raw', 'msigdb', 'reactome.csv'), index=False, header=True)
+
+    if dataset == 'reactome':
+        return reactome
+    elif dataset == 'kegg':
+        return kegg
+
 
 def avg_cell_n(path):
       """

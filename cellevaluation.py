@@ -23,7 +23,7 @@ def parse_args():
                         help="Pattern of .5ad objects in 'h5ad_dir' which should be evaluated")
     parser.add_argument("--num_subgraphs_per_graph", type=int, default=0,
                         help="Number of subgraphs per graph to create to evaluate niches")
-    parser.add_argument("--num_hops_per_subgraph", type=list, default=[1, 2, 3, 5, 8, 11],
+    parser.add_argument("--num_hops_per_subgraph", type=int, default=[], nargs='+',
                         help="Number of hops per subgraphs to create to evaluate niches")
     parser.add_argument("--sum_by_graph", action="store_true", default=False,
                         help="Wether or not 'vis_label_data' is label data or cell measurement data: ROI or Image key")

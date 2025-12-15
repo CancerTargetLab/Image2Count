@@ -28,6 +28,7 @@ def _create_metrics(path,
     num_models = 0
     for entrie in entries:
         if entrie.endswith('.h5ad') and pattern.match(entrie) and os.path.isfile(os.path.join(path, entrie)):
+            num_models += 1
             print(entrie)
             adata = sc.read_h5ad(os.path.join(path, entrie))
             var_names = adata.var_names.values
@@ -200,13 +201,11 @@ def _metrics(x,
             performance_metrics['mean_edge_l_sc'][f'js_div_{cluster_key}_{name}'] = js_div
         performance_metrics['SNR'][f'mi_{cluster_key}_{name}'] = mi
         performance_metrics['SNR'][f'dist_{cluster_key}_{name}'] = dist.mean(axis=0)
-        performance_metrics['SNR'][f'js_div_{cluster_key}_{name}'] = js_div
         performance_metrics['SNR'][f'pcc_{cluster_key}_{name}'] = p_stat
         performance_metrics['SNR'][f'scc_{cluster_key}_{name}'] = s_stat
         performance_metrics['SNR'][f'kcc_{cluster_key}_{name}'] = k_stat
         performance_metrics['abundance'][f'mi_{cluster_key}_{name}'] = mi
         performance_metrics['abundance'][f'dist_{cluster_key}_{name}'] = dist.mean(axis=0)
-        performance_metrics['abundance'][f'js_div_{cluster_key}_{name}'] = js_div
         performance_metrics['abundance'][f'pcc_{cluster_key}_{name}'] = p_stat
         performance_metrics['abundance'][f'scc_{cluster_key}_{name}'] = s_stat
         performance_metrics['abundance'][f'kcc_{cluster_key}_{name}'] = k_stat
@@ -217,7 +216,7 @@ def _metrics(x,
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), 0],    # ssim returns singular value
     }
     if do_clustering_metrics:
-        x_cluster = cluster_cell_expression(x)
+        x_cluster = cluster_cell_expression(x.copy())
         if cluster_key not in y_clusters.keys():
             y_cluster = cluster_cell_expression(y.copy())
             y_clusters[cluster_key] = y_cluster
@@ -251,7 +250,7 @@ def _metrics(x,
                                 y_enrichment['kegg_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['kegg_msigdb'],
                                                                     x_enrichment['kegg_msigdb'])/2
             mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb'])
-            mean_data['Mean'].extend([ari, nmi, tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
+            mean_data['Mean'].extend([tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
             mean_data['Std'].extend([0, 0, 0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
         ari = per_area_ari(x_cluster, y_cluster)
         nmi = per_area_nmi(x_cluster, y_cluster)
@@ -346,7 +345,7 @@ def Metrics(path,
             do_performance_metrics=True):
     target_column_file_name = 'ROI' if sum_by_graph else 'Image'
 
-    target_df = pd.read_csv(target,
+    target_df = pd.read_csv(os.path.join('data', 'raw', target),
                     header=0,
                     sep=',')
     target_df[target_column_file_name] = target_df[target_column_file_name].apply(lambda x: x.split('.')[0])

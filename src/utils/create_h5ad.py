@@ -172,6 +172,8 @@ def combine_data(value_dict, IDs, exps, name, cell_shapes, path):
     adata.obs['files'] = files
     adata.obs['leiden'] = -1
     adata.var_names = exps
+    if not os.path.exists(path):
+        os.makedirs(path)
     adata.write(os.path.join(path, name+'_all.h5ad'))
 
 def createH5AD(path,
@@ -191,4 +193,5 @@ def createH5AD(path,
     value_dict = get_predicted_graph_expression(value_dict, embed_dir)
     value_dict, cell_shapes = get_predicted_cell_expression(value_dict, embed_dir)
     IDs, exps = get_patient_ids(label_data, list(value_dict.keys()))
+    name = name+'_'+os.path.basename(os.path.normpath(embed_dir))
     combine_data(value_dict, IDs, exps, name, cell_shapes, path)
