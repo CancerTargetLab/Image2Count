@@ -198,15 +198,15 @@ Pattern which describes `.h5ad` files which to consider. Iterates over all if mu
 Number of subgraphs per graph to create if ground truth available and niche performance is to be analyzed.
 - `--num_hops_per_subgraph`:  
 Number of hops to create niches for evaluation. Can be multiple, which are saved accordingly.
- `--do_clusterin_metrics`:  
+- `--do_clusterin_metrics`:  
 Wether or not to calculate clustering metrics ARI, NMI.
- `--do_performance_metrics`:  
+- `--do_performance_metrics`:  
 Wether or not to save performance metrics per marker/cell/niche.
- `--do_pathway_metrics`:  
+- `--do_pathway_metrics`:  
 Wether or not to do enrichment analysis for multiple pathway or tf databases. Only done if `--do_clustering_metrics`.
-`--performance_metrics`:  
+- `--performance_metrics`:  
 Wether or not to calculate metrics.
-`--figure_dir`:  
+- `--figure_dir`:  
 Directory in which performance metrics are saved.
 
 ## Visualizing Model runs
