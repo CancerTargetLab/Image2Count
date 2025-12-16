@@ -73,7 +73,7 @@ def _create_metrics(path,
             x = x[is_g_zero]
             y = y[is_g_zero]
             mean_edge_l = mean_edge_l[is_g_zero]
-            _prepare_performance_metrics(var_names, y, 'sc', mean_edge_l)
+            _prepare_performance_metrics(var_names, y, 'sc', mean_edge_l, performance_metrics)
             _metrics(x=x,
                     y=y,
                     name=entrie,
@@ -235,20 +235,20 @@ def _metrics(x,
             y_cluster_enrichment[f'xx_{cluster_key}_{name}'] = x_enrichment
             y_cluster_enrichment[f'yx_{cluster_key}_{name}'] = yx_enrichment
             tf_coverage = per_cluster_key_coverage(xy_enrichment['CollecTRI'],
-                            y_enrichment['CollecTRI'])/2 + per_cluster_key_coverage(yx_enrichment['CollecTRI'],
-                                                            x_enrichment['CollecTRI'])/2
+                            y_enrichment['CollecTRI'])/2 + per_cluster_key_coverage(x_enrichment['CollecTRI'],
+                                                            yx_enrichment['CollecTRI'])/2
             pw_coverage = per_cluster_key_coverage(xy_enrichment['PROGENy'],
-                            y_enrichment['PROGENy'])/2 + per_cluster_key_coverage(yx_enrichment['PROGENy'],
-                                                            x_enrichment['PROGENy'])/2
+                            y_enrichment['PROGENy'])/2 + per_cluster_key_coverage(x_enrichment['PROGENy'],
+                                                            yx_enrichment['PROGENy'])/2
             hm_coverage = per_cluster_key_coverage(xy_enrichment['hallmark_msigdb'],
-                                    y_enrichment['hallmark_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['hallmark_msigdb'],
-                                                                            x_enrichment['hallmark_msigdb'])/2
+                                    y_enrichment['hallmark_msigdb'])/2 + per_cluster_key_coverage(x_enrichment['hallmark_msigdb'],
+                                                                            yx_enrichment['hallmark_msigdb'])/2
             ro_coverage = per_cluster_key_coverage(xy_enrichment['reactome_msigdb'],
-                            y_enrichment['reactome_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['reactome_msigdb'],
-                                                                    x_enrichment['reactome_msigdb'])/2
+                            y_enrichment['reactome_msigdb'])/2 + per_cluster_key_coverage(x_enrichment['reactome_msigdb'],
+                                                                    yx_enrichment['reactome_msigdb'])/2
             kegg_coverage = per_cluster_key_coverage(xy_enrichment['kegg_msigdb'],
-                                y_enrichment['kegg_msigdb'])/2 + per_cluster_key_coverage(yx_enrichment['kegg_msigdb'],
-                                                                    x_enrichment['kegg_msigdb'])/2
+                                y_enrichment['kegg_msigdb'])/2 + per_cluster_key_coverage(x_enrichment['kegg_msigdb'],
+                                                                    yx_enrichment['kegg_msigdb'])/2
             mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb'])
             mean_data['Mean'].extend([tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
             mean_data['Std'].extend([0, 0, 0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple

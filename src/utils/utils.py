@@ -332,7 +332,7 @@ def load_and_store_reactome_kegg(dataset):
     kegg = kegg[kegg['geneset'].isin(ulm_genesets)]
     kegg = kegg.rename(columns={'geneset': 'source', 'genesymbol': 'target'})
     kegg = kegg[['source', 'target']]
-    kegg.to_csv(os.path.join('data', 'raw', 'msigdb', 'reactome.csv'), index=False, header=True)
+    kegg.to_csv(os.path.join('data', 'raw', 'msigdb', 'kegg.csv'), index=False, header=True)
 
     if dataset == 'reactome':
         return reactome
