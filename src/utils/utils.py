@@ -205,7 +205,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
 
-    collectri = dc.op.collectri(organism='human')
+    collectri = load_and_store_dataset('collectri')
     dc.mt.gsea(data=adata, net=collectri, tmin=15)
     score = dc.pp.get_obsm(adata=adata, key='score_gsea')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
@@ -224,7 +224,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
     
-    progeny = dc.op.progeny(organism="human")
+    progeny = load_and_store_dataset('progeny')
     dc.mt.ulm(data=adata, net=progeny, tmin=15)
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')   # ulm makes use of weights available for progeny
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
