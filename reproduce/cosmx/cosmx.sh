@@ -58,7 +58,7 @@ python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/6_6/metrics/
 python -m cellevaluation --merge --embed_dir out/cosmx_6_6/ --h5ad_dir 'out/' --vis_label_data cosmx_label.csv \
-        --processed_subset_dir cosmx/test --vis_name cosmx_6_6_mean --embed_to_h5ad
+        --processed_subset_dir cosmx/test --vis_name cosmx_6_6 --embed_to_h5ad
 python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad_dir 'out/' --vis_name_pattern 'cosmx_6_6_mean_all.h5ad' \
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/6_6/metrics/mean/
@@ -72,7 +72,7 @@ python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/17_0/metrics/
 python -m cellevaluation --merge --embed_dir out/cosmx_17_0/ --h5ad_dir 'out/' --vis_label_data cosmx_label.csv \
-        --processed_subset_dir cosmx/test --vis_name cosmx_17_0_mean --embed_to_h5ad
+        --processed_subset_dir cosmx/test --vis_name cosmx_17_0 --embed_to_h5ad
 python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad_dir 'out/' --vis_name_pattern 'cosmx_17_0_mean_all.h5ad' \
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/17_0/metrics/mean/
@@ -86,7 +86,7 @@ python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/lin/metrics/
 python -m cellevaluation --merge --embed_dir out/cosmx_lin/ --h5ad_dir 'out/' --vis_label_data cosmx_label.csv \
-        --processed_subset_dir cosmx/test --vis_name cosmx_6_6_mean --embed_to_h5ad
+        --processed_subset_dir cosmx/test --vis_name cosmx_6_6 --embed_to_h5ad
 python -m cellevaluation --vis_label_data cosmx_measuremens_flipped_y.csv --h5ad_dir 'out/' --vis_name_pattern 'cosmx_lin_mean_all.h5ad' \
         --num_subgraphs_per_graph 36 --num_hops_per_subgraph 1 2 3 5 8 11 --do_clustering_metrics --do_performance_metrics --do_pathway_metrics \
         --performance_metrics --figure_dir figures/cosmx/lin/metrics/mean/
