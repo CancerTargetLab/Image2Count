@@ -206,7 +206,7 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.log1p(adata)
 
     collectri = dc.op.collectri(organism='human')
-    dc.mt.ulm(data=adata, net=collectri, tmin=2 if adata.var_names.shape[0]<400 else 5)
+    dc.mt.ulm(data=adata, net=collectri, tmin=15)   # ulm makes use of weights available for collectri
     score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
@@ -225,8 +225,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .to_dict())
     
     progeny = dc.op.progeny(organism="human")
-    dc.mt.ulm(data=adata, net=progeny, tmin=2 if adata.var_names.shape[0]<400 else 5)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    dc.mt.ulm(data=adata, net=progeny, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')   # ulm makes use of weights available for progeny
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -243,9 +243,9 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
 
-    hallmark = dc.op.hallmark(organism='human')
-    dc.mt.ulm(data=adata, net=hallmark, tmin=2 if adata.var_names.shape[0]<400 else 5)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    hallmark = load_and_store_dataset('hallmark')
+    dc.mt.gsea(data=adata, net=hallmark, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -262,9 +262,9 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
     
-    reactome = load_and_store_reactome_kegg('reactome')
-    dc.mt.ulm(data=adata, net=reactome, tmin=2 if adata.var_names.shape[0]<400 else 5)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    reactome = load_and_store_dataset('reactome')
+    dc.mt.gsea(data=adata, net=reactome, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -281,9 +281,9 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         })
         .to_dict())
 
-    kegg = load_and_store_reactome_kegg('kegg')
-    dc.mt.ulm(data=adata, net=kegg, tmin=2 if adata.var_names.shape[0]<400 else 5)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    kegg = load_and_store_dataset('kegg')
+    dc.mt.gsea(data=adata, net=kegg, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -306,13 +306,22 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
             'reactome_msigdb': reactome_source_markers,
             'kegg_msigdb': kegg_source_markers}
 
-def load_and_store_reactome_kegg(dataset):
+def load_and_store_dataset(dataset):
     if not os.path.exists(os.path.join('data', 'raw', 'msigdb')):
         os.makedirs(os.path.join('data', 'raw', 'msigdb'))
     pathway_csvs = os.listdir(os.path.join('data', 'raw', 'msigdb'))
     for csv in pathway_csvs:
         if csv.endswith('.csv') and csv.startswith(dataset):
             return pd.read_csv(os.path.join('data', 'raw', 'msigdb', csv))
+
+    collectri = dc.op.collectri(organism='human')
+    collectri.to_csv(os.path.join('data', 'raw', 'msigdb', 'collectri.csv'), index=False, header=True)
+
+    progeny = dc.op.progeny(organism="human")
+    progeny.to_csv(os.path.join('data', 'raw', 'msigdb', 'progeny.csv'), index=False, header=True)
+
+    hallmark = dc.op.hallmark(organism='human')
+    hallmark.to_csv(os.path.join('data', 'raw', 'msigdb', 'hallmark.csv'), index=False, header=True)
         
     msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')
 
@@ -334,7 +343,13 @@ def load_and_store_reactome_kegg(dataset):
     kegg = kegg[['source', 'target']]
     kegg.to_csv(os.path.join('data', 'raw', 'msigdb', 'kegg.csv'), index=False, header=True)
 
-    if dataset == 'reactome':
+    if dataset == 'collectri':
+        return collectri
+    elif dataset == 'progeny':
+        return progeny
+    elif dataset == 'hallmark':
+        return hallmark
+    elif dataset == 'reactome':
         return reactome
     elif dataset == 'kegg':
         return kegg

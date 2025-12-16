@@ -249,7 +249,7 @@ def _metrics(x,
             kegg_coverage = per_cluster_key_coverage(xy_enrichment['kegg_msigdb'],
                                 y_enrichment['kegg_msigdb'])/2 + per_cluster_key_coverage(x_enrichment['kegg_msigdb'],
                                                                     yx_enrichment['kegg_msigdb'])/2
-            mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb'])
+            mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb_cov'])
             mean_data['Mean'].extend([tf_coverage, pw_coverage, hm_coverage, ro_coverage, kegg_coverage])
             mean_data['Std'].extend([0, 0, 0, 0, 0]) # We ignore std values for these metrics as we do not calculate multiple
         ari = per_area_ari(x_cluster, y_cluster)
