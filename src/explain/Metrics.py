@@ -67,8 +67,10 @@ def _create_metrics(path,
                         y_clusters=y_clusters,
                         y_cluster_enrichment=y_cluster_enrichment,
                         out=out)
-            if do_performance_metrics:
+            if do_performance_metrics and target_column_file_name=='Image':
                 _, _, mean_edge_l = _create_subgraphs(x, target_df, 0, -1, var_names)
+            else: 
+                mean_edge_l = -np.ones((x.shape[0]), dtype=x.dtype)
             is_g_zero = np.sum(y, axis=-1) > 0
             x = x[is_g_zero]
             y = y[is_g_zero]
@@ -308,10 +310,10 @@ def _mean_multiple_model_metrics(sub_entrie,
         k_stat[i] = df.loc[df['Metric']=='Kendall']['Mean'].values[0]
         js_div[i] = df.loc[df['Metric']=='JensenShannonDiv']['Mean'].values[0]
         ssim[i] = df.loc[df['Metric']=='SSIM']['Mean'].values[0]
-        if 'ARI' in df.columns.to_list():
+        if 'ARI' in df['Metric'].to_list():
             ari[i] = df.loc[df['Metric']=='ARI']['Mean'].values[0]
             nmi[i] = df.loc[df['Metric']=='NMI']['Mean'].values[0]
-        if 'tf_cov' in df.columns.to_list():
+        if 'tf_cov' in df['Metric'].to_list():
             tf_cov[i] = df.loc[df['Metric']=='CollecTRI_cov']['Mean'].values[0]
             pw_cov[i] = df.loc[df['Metric']=='PROGENy_cov']['Mean'].values[0]
             hm_cov[i] = df.loc[df['Metric']=='hallmark_msigdb_cov']['Mean'].values[0]
@@ -322,11 +324,11 @@ def _mean_multiple_model_metrics(sub_entrie,
         'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim.mean()],
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), ssim.std()],
     }
-    if 'tf_cov' in df.columns.to_list():
+    if 'tf_cov' in df['Metric'].to_list():
         mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb_cov'])
         mean_data['Mean'].extend([tf_cov.mean(), pw_cov.mean(), hm_cov.mean(), ro_cov.mean(), kegg_cov.mean()])
         mean_data['Std'].extend([tf_cov.std(), pw_cov.std(), hm_cov.std(), ro_cov.std(), kegg_cov.std()])
-    if 'ARI' in df.columns.to_list():
+    if 'ARI' in df['Metric'].to_list():
         mean_data['Metric'].extend(['ARI', 'NMI'])
         mean_data['Mean'].extend([ari.mean(), nmi.mean()])
         mean_data['Std'].extend([ari.std(), nmi.std()])
@@ -382,7 +384,7 @@ def Metrics(path,
         if not os.path.exists(os.path.join(out, 'performance_metrics')):
             os.makedirs(os.path.join(out, 'performance_metrics'))
         for key in performance_metrics.keys():
-            performance_metrics[key].to_csv(os.path.join(out, 'performance_metrics.csv'), index=False)
+            performance_metrics[key].to_csv(os.path.join(out, 'performance_metrics', f'performance_metrics_{key}.csv'), index=False)
         if do_pathway_metrics:
-            with open(os.path.join(out, 'cluster_enrichment.json'), 'wb') as handle:
+            with open(os.path.join(out, 'performance_metrics','cluster_enrichment.json'), 'wb') as handle:
                 json.dump(y_cluster_enrichment, handle, indent=4)

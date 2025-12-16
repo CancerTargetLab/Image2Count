@@ -206,8 +206,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.log1p(adata)
 
     collectri = dc.op.collectri(organism='human')
-    dc.mt.ulm(data=adata, net=collectri, tmin=15)   # ulm makes use of weights available for collectri
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    dc.mt.gsea(data=adata, net=collectri, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
