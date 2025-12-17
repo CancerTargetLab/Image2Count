@@ -150,7 +150,10 @@ def per_area_ssim(x, y):
     Returns:
     (np.array): jason shannon divergence
     """
-    return structural_similarity(x, y, data_range=max(x.max(), y.max()), channel_axis=1)
+    lx, ly = np.log1p(x), np.log1p(y)
+    return structural_similarity(lx, ly,
+                                 data_range=max(lx.max(), ly.max()) - min(lx.min(), ly.min()),
+                                 channel_axis=None)
 
 def per_cluster_key_coverage(predicted_dict, true_dict, top_k=5):
     identified = 0
@@ -206,8 +209,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.log1p(adata)
 
     collectri = load_and_store_dataset('collectri')
-    dc.mt.gsea(data=adata, net=collectri, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
+    dc.mt.ulm(data=adata, net=collectri, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -244,8 +247,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .to_dict())
 
     hallmark = load_and_store_dataset('hallmark')
-    dc.mt.gsea(data=adata, net=hallmark, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
+    dc.mt.ulm(data=adata, net=hallmark, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -263,8 +266,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .to_dict())
     
     reactome = load_and_store_dataset('reactome')
-    dc.mt.gsea(data=adata, net=reactome, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
+    dc.mt.ulm(data=adata, net=reactome, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
@@ -282,8 +285,8 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
         .to_dict())
 
     kegg = load_and_store_dataset('kegg')
-    dc.mt.gsea(data=adata, net=kegg, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_gsea')
+    dc.mt.ulm(data=adata, net=kegg, tmin=15)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
     df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
     df = df[df['stat'] > 0.0]
     df = df[df['padj'] <= 0.05]
