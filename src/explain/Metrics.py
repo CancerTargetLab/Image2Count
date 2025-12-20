@@ -313,7 +313,7 @@ def _mean_multiple_model_metrics(sub_entrie,
         if 'ARI' in df['Metric'].to_list():
             ari[i] = df.loc[df['Metric']=='ARI']['Mean'].values[0]
             nmi[i] = df.loc[df['Metric']=='NMI']['Mean'].values[0]
-        if 'tf_cov' in df['Metric'].to_list():
+        if 'CollecTRI_cov' in df['Metric'].to_list():
             tf_cov[i] = df.loc[df['Metric']=='CollecTRI_cov']['Mean'].values[0]
             pw_cov[i] = df.loc[df['Metric']=='PROGENy_cov']['Mean'].values[0]
             hm_cov[i] = df.loc[df['Metric']=='hallmark_msigdb_cov']['Mean'].values[0]
@@ -324,7 +324,7 @@ def _mean_multiple_model_metrics(sub_entrie,
         'Mean': [p_stat.mean(), s_stat.mean(), k_stat.mean(), mi.mean(), sim.mean(), dist.mean(), js_div.mean(), ssim.mean()],
         'Std': [p_stat.std(), s_stat.std(), k_stat.std(), mi.std(), sim.std(), dist.std(), js_div.std(), ssim.std()],
     }
-    if 'tf_cov' in df['Metric'].to_list():
+    if 'CollecTRI_cov' in df['Metric'].to_list():
         mean_data['Metric'].extend(['CollecTRI_cov', 'PROGENy_cov', 'hallmark_msigdb_cov', 'reactome_msigdb_cov', 'kegg_msigdb_cov'])
         mean_data['Mean'].extend([tf_cov.mean(), pw_cov.mean(), hm_cov.mean(), ro_cov.mean(), kegg_cov.mean()])
         mean_data['Std'].extend([tf_cov.std(), pw_cov.std(), hm_cov.std(), ro_cov.std(), kegg_cov.std()])
