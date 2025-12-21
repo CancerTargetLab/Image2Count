@@ -386,5 +386,5 @@ def Metrics(path,
         for key in performance_metrics.keys():
             performance_metrics[key].to_csv(os.path.join(out, 'performance_metrics', f'performance_metrics_{key}.csv'), index=False)
         if do_pathway_metrics:
-            with open(os.path.join(out, 'performance_metrics','cluster_enrichment.json'), 'wb') as handle:
+            with open(os.path.join(out, 'performance_metrics','cluster_enrichment.json'), 'w') as handle:
                 json.dump(y_cluster_enrichment, handle, indent=4)
