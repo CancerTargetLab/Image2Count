@@ -7,7 +7,7 @@ out = 'figures/metrics/nanostring_100/6_6/metrics/mean/performance_metrics'
 
 hops = ['1', '2', '3', '5', '8', '11', 'sc']
 m_names = ('sim', 'js_div', 'ari', 'nmi', 'mi', 'dist', 'pcc', 'scc', 'kcc')
-comparison = ['SNR', 'abundance', 'mean_edge_l']
+comparison = ['SNR', 'abundance', 'mean_edge_l', 'mean_edge_l_sc']
 
 if not os.path.exists(out):
     os.makedirs(out)
@@ -27,7 +27,8 @@ for file in files:
                 col_metric = col_metric.split('_')[0]+col_metric.split('_')[1]
         else:
             col_metric = col
-        plt.scatter(df[col_metric], df[col])
+        col_metric = metric if metric == 'mean_edge_l_sc' else col_metric
+        plt.scatter(df[col_metric], df[col], s=1, alpha=0.5)
         plt.xlabel(f'{metric}')
         y_label = col.split('_')[0]
         plt.ylabel(y_label)
