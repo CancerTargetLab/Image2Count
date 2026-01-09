@@ -326,7 +326,7 @@ def load_and_store_dataset(dataset):
     hallmark = dc.op.hallmark(organism='human')
     hallmark.to_csv(os.path.join('data', 'raw', 'msigdb', 'hallmark.csv'), index=False, header=True)
         
-    msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')
+    msigdb = dc.op.resource('MSigDB', verbose=True, organism='human')   #TODO: go_biological_process?
 
     reactome = msigdb[msigdb['collection']=='reactome_pathways']
     reactome = reactome[~reactome.duplicated(('geneset', 'genesymbol'))]
