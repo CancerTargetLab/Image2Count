@@ -3,13 +3,14 @@ import numpy as np
 import scanpy as sc
 import statsmodels.formula.api as smf
 from scipy.stats import false_discovery_control
-from statsmodels.stats.contrast import _get_pairs_labels, _embed_constraints, t_test_multi
+import statsmodels.sandbox.stats.multicomp as mc
+from statsmodels.stats.contrast import _get_pairs_labels, _embed_constraints
 from sklearn.cluster import AgglomerativeClustering
 from scipy.spatial.distance import pdist, squareform
 import os
 import glob
 
-paths = ['figures/metrics/crc_1p',]
+paths = ['figures/metrics/nanostring_100',]
 models = ['6_6', '17_0', 'lin']
 levels = ['1', '2', '3', '5', '8', '11', 'sc']
 _addage = 'metrics/mean/performance_metrics'
@@ -109,14 +110,14 @@ def test_effect(results_df):
         k_params = len(result.params)
         labels = _get_pairs_labels(k_level, cat)
 
-        import statsmodels.sandbox.stats.multicomp as mc
         c_all_pairs = -mc.contrast_allpairs(k_level)
         contrasts_sub = c_all_pairs.dot(cm)
-        contrasts = _embed_constraints(contrasts_sub, k_params, idx_start)  #Error is here somehow, but works like this
-        res_df = t_test_multi(result, contrasts[:,:-1], method='fdr_bh', ci_method=None,
-                            alpha=0.05, contrast_names=labels)
-        res = res_df[['coef', 'pvalue-fdr_bh']]
-        res = res.rename(columns={'coef': f'{metric}coef', 'pvalue-fdr_bh': f'{metric}pv_fdr_bh1'}).T
+        contrasts = _embed_constraints(contrasts_sub, k_params, idx_start)  #Error is here somehow, but works like this [:,:-1]
+        tt = result.t_test(contrasts[:,:-1])
+        res_df = tt.summary_frame(xname=labels)
+        res_df['pvalue'] = tt.pvalue
+        res = res_df[['coef', 'pvalue']]
+        res = res.rename(columns={'coef': f'{metric}coef', 'pvalue': f'{metric}pv'}).T
         results_summary.append(res)
 
     return pd.concat(results_summary)
@@ -131,7 +132,7 @@ result_areas = test_effect(aggregated_results_areas)
 result_sc = test_effect(aggregated_results_sc)
 
 agg_results = pd.concat([result_genes, result_areas, result_sc])
-idx = agg_results.index.str.contains('pv_fdr_bh1')
+idx = agg_results.index.str.contains('pv')
 pvals = agg_results.iloc[idx].values
 pvals_r = pvals.reshape((pvals.shape[0]*pvals.shape[1]))
 
