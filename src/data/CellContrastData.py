@@ -110,6 +110,7 @@ class EmbedDataset(Dataset):
 
         img = torch.from_numpy(np.load(self.cells_path[0]))
         img_shape = img.shape
+        self.img_shape = img.shape
         img_dtype = img.dtype
         del img
         if not save_embed_data:

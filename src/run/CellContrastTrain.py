@@ -40,7 +40,7 @@ def train(**args):
     test_dataset = EmbedDataset(split='test',
                                 n_clusters=1,
                                 **args)
-    model = ContrastiveLearning(channels=train_dataset.__getitem__(0)[0].shape[0],
+    model = ContrastiveLearning(channels=train_dataset.img_shape[0],
                                 **args).to(device, dtype=torch.float32)
 
     train_loader = DataLoader(train_dataset,

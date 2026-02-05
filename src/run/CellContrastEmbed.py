@@ -28,7 +28,7 @@ def embed(**args):
                                 save_embed_data=True,
                                 **args)
 
-    model = ContrastiveLearning(channels=train_dataset.__getitem__(0)[0].shape[0],
+    model = ContrastiveLearning(channels=train_dataset.img_shape[0],
                                 **args).to(device, torch.float32)
     model.load_state_dict(load(args['output_name'], save_keys='model', device=device))
     model.eval()
