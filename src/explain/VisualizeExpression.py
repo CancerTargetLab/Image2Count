@@ -210,6 +210,10 @@ def visualize_cell_expression(value_dict, IDs, exps, name, figure_dir, cell_shap
         adata.var['spearman_genes'] = adata.var_names.isin(spearman_genes)
         if not os.path.exists('out/'+name+'_all.h5ad'):
             adata.write('out/'+name+'_all.h5ad')
+        
+        if spearman_genes.shape[0]<2:
+            print(f'Num. of significant spearman genes is {spearman_genes.shape[0]}<2, not performing analysis: Do manually!')
+            return
 
         adata = sc.AnnData(counts[cell_index])
         if cell_class is not None:

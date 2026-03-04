@@ -170,7 +170,7 @@ python -m cellevaluation --merge --embed_dir out/graph_model/ --h5ad_dir 'out/' 
 - `--merge`:  
 Merge crossfold model predictions by calculating the mean. 
 - `embed_dir`:  
-Directory in which data is embedded.
+Directory in which data is embedded, if --merge is called this should be the parent directory containing all to be merged prediction folders, resulting in os.path.join(args['embed_dir'], 'mean') containing merged predictions.
 - `--h5ad_dir`:  
 Directory in which to save the sc.AnnData obeject.
 - `--vis_label_data`:  
@@ -192,7 +192,7 @@ python -m cellevaluation --vis_label_data dataset/measurements.csv --h5ad_dir 'o
 Label or measurement csv, depending on if cellular ground truth is available.
 - `--h5ad_dir`:  
 Directory in which to save the sc.AnnData obeject.
-- `__vis_name_pattern`:  
+- `--vis_name_pattern`:  
 Pattern which describes `.h5ad` files which to consider. Iterates over all if multiple and creates averages of performance.
 - `--num_subgraphs_per_graph`:  
 Number of subgraphs per graph to create if ground truth available and niche performance is to be analyzed.
@@ -243,13 +243,15 @@ Subset `train/test{/subgraphs}` directory of processed/ and raw/ of data.
 - `--figure_dir`:  
 Path to save images to.
 - `--embed_dir`:  
-Path to predicted single cell data per Graph/Image.
+Path to predicted single cell data per Graph/Image, if --merge is called this should be the parent directory containing all to be merged prediction folders, resulting in os.path.join(args['embed_dir'], 'mean') containing merged predictions.
 - `--vis_select_cells`:  
 Number of cells to perform dim reduction on. If 0, then all cells get reduced.
 - `--vis_name`:  
 Name added to figures name, saves processed data as `{NAME}.h5ad` in `out/`. Additional unproccesed save with all cells is named `{NAME}_all.h5ad`.
 - `--has_expr_data`:  
 Wether or not true Single Cell expression data is in `measurements.csv`, calculates per cell correlation.
+- `--raw_subset_dir`:  
+How the subdir containing experiment data in raw/ and processed/ is called, used when --has_expr_data is True.
 - `--merge`:  
 Wether or not to merge predictions of multiple models in seperate dirs in embed_dir. If specified, visualizes expression of merged models(mean merged).
 

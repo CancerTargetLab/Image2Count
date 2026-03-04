@@ -41,10 +41,12 @@ def parse_args():
                         help="Wether or not to visualize predicted sc expression")
     parser.add_argument("--has_expr_data", action="store_true", default=False,
                         help="Wether or not true Single Cell expression data is in measurements.csv")
+    parser.add_argument("--raw_subset_dir", type=str, default="TMA1_preprocessed",
+                        help="How the subdir in raw/ and processed/ is called, used when --has_expr_data is given")
     parser.add_argument("--processed_subset_dir", type=str, default="TMA1_preprocessed",
                         help="Subset directory of processed/ and raw/ of data")
     parser.add_argument("--embed_dir", type=str, default="out/",
-                        help="Path to predicted single cell data per Graph/Image")
+                        help="Path to predicted single cell data per Graph/Image, if --merge is called this should be the parent directory containing all to be merged prediction folders, resulting in os.path.join(args['embed_dir'], 'mean') containing merged predictions")
     parser.add_argument("--vis_select_cells", type=int, default=0,
                         help="Number of cells to perform dim reduction on. If 0, then all cells get reduced")
     parser.add_argument("--vis_name", type=str, default="_cells",
