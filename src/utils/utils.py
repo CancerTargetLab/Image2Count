@@ -163,6 +163,8 @@ def per_cluster_key_coverage(predicted_dict, true_dict, top_k=5):
         for val in predicted_dict[key]['name'][:top_k]:
             if val in true_dict[key]['name'][:top_k]:
                 identified += 1
+    if true_total==0:
+        return 0
     return identified / true_total
 
 def corr_all2all(adata, method='pearsonr'):
@@ -201,6 +203,26 @@ def cluster_cell_expression(x):
     sc.tl.leiden(adata, resolution=0.5, flavor="igraph", n_iterations=4)
     return adata.obs['leiden'].values
 
+def pathway(adata, db, top_k, tmin=15):
+    net = load_and_store_dataset(db)
+    dc.mt.ulm(data=adata, net=net, tmin=tmin)
+    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
+    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
+    df = df[df['stat'] > 0.0]
+    df = df[df['padj'] <= 0.05]
+    return (
+        df.groupby('group', observed=False)
+        .head(top_k)
+        .drop_duplicates('name')
+        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
+        .apply(lambda x: {
+            'name': x['name'].to_list(),
+            'stat': x['stat'].to_list(),
+            'pval': x['pval'].to_list(),
+            'padj': x['padj'].to_list()
+        })
+        .to_dict())
+
 def per_cluster_pathways(x, var_names, clusters, top_k=5):
     adata = sc.AnnData(x)
     adata.var_names = var_names
@@ -208,100 +230,11 @@ def per_cluster_pathways(x, var_names, clusters, top_k=5):
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
 
-    collectri = load_and_store_dataset('collectri')
-    dc.mt.ulm(data=adata, net=collectri, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
-    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
-    df = df[df['stat'] > 0.0]
-    df = df[df['padj'] <= 0.05]
-    tf_source_markers = (
-        df.groupby('group', observed=False)
-        .head(top_k)
-        .drop_duplicates('name')
-        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
-        .apply(lambda x: {
-            'name': x['name'].to_list(),
-            'stat': x['stat'].to_list(),
-            'pval': x['pval'].to_list(),
-            'padj': x['padj'].to_list()
-        })
-        .to_dict())
-    
-    progeny = load_and_store_dataset('progeny')
-    dc.mt.ulm(data=adata, net=progeny, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')   # ulm makes use of weights available for progeny
-    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
-    df = df[df['stat'] > 0.0]
-    df = df[df['padj'] <= 0.05]
-    pw_source_markers = (
-        df.groupby('group', observed=False)
-        .head(top_k)
-        .drop_duplicates('name')
-        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
-        .apply(lambda x: {
-            'name': x['name'].to_list(),
-            'stat': x['stat'].to_list(),
-            'pval': x['pval'].to_list(),
-            'padj': x['padj'].to_list()
-        })
-        .to_dict())
-
-    hallmark = load_and_store_dataset('hallmark')
-    dc.mt.ulm(data=adata, net=hallmark, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
-    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
-    df = df[df['stat'] > 0.0]
-    df = df[df['padj'] <= 0.05]
-    hall_mark_source_markers = (
-        df.groupby('group', observed=False)
-        .head(top_k)
-        .drop_duplicates('name')
-        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
-        .apply(lambda x: {
-            'name': x['name'].to_list(),
-            'stat': x['stat'].to_list(),
-            'pval': x['pval'].to_list(),
-            'padj': x['padj'].to_list()
-        })
-        .to_dict())
-    
-    reactome = load_and_store_dataset('reactome')
-    dc.mt.ulm(data=adata, net=reactome, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
-    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
-    df = df[df['stat'] > 0.0]
-    df = df[df['padj'] <= 0.05]
-    reactome_source_markers = (
-        df.groupby('group', observed=False)
-        .head(top_k)
-        .drop_duplicates('name')
-        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
-        .apply(lambda x: {
-            'name': x['name'].to_list(),
-            'stat': x['stat'].to_list(),
-            'pval': x['pval'].to_list(),
-            'padj': x['padj'].to_list()
-        })
-        .to_dict())
-
-    kegg = load_and_store_dataset('kegg')
-    dc.mt.ulm(data=adata, net=kegg, tmin=15)
-    score = dc.pp.get_obsm(adata=adata, key='score_ulm')
-    df = dc.tl.rankby_group(adata=score, groupby='leiden', reference='rest', method='t-test_overestim_var')
-    df = df[df['stat'] > 0.0]
-    df = df[df['padj'] <= 0.05]
-    kegg_source_markers = (
-        df.groupby('group', observed=False)
-        .head(top_k)
-        .drop_duplicates('name')
-        .groupby('group', observed=False)[['name', 'stat', 'pval', 'padj']]
-        .apply(lambda x: {
-            'name': x['name'].to_list(),
-            'stat': x['stat'].to_list(),
-            'pval': x['pval'].to_list(),
-            'padj': x['padj'].to_list()
-        })
-        .to_dict())
+    tf_source_markers = pathway(adata, 'collectri', top_k=top_k)
+    pw_source_markers = pathway(adata, 'progeny', top_k=top_k)
+    hall_mark_source_markers = pathway(adata, 'hallmark', top_k=top_k)
+    reactome_source_markers = pathway(adata, 'reactome', top_k=top_k)
+    kegg_source_markers = pathway(adata, 'kegg', top_k=top_k)
 
     return {'CollecTRI': tf_source_markers, 
             'PROGENy': pw_source_markers,
