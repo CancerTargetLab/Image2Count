@@ -54,12 +54,12 @@ do
 done
 
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_7_0_[0-9]_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/7_0/metrics/
 python -m cellevaluation --merge --embed_dir out/hkgmh3_74_20_7_0/ --h5ad_dir 'out/' --vis_label_data hkgmh3_74_20_label.csv \
         --processed_subset_dir hkgmh3_74_20/test --vis_name hkgmh3_74_20_7_0_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_7_0_mean_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics  --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics  --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/7_0/metrics/mean/
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --processed_subset_dir hkgmh3_74_20/test --figure_dir figures/hkgmh3_74_20/7_0/mean/ --merge \
         --embed_dir out/hkgmh3_74_20_7_0/ --vis_name hkgmh3_74_20_7_0_mean --visualize_expression --raw_subset_dir hkgmh3_74_20
@@ -68,12 +68,12 @@ python -m cellevaluation --visualize_image --vis_name hkgmh3_74_20_7_0_mean.h5ad
         --vis_protein PanCk,Ki-67,SMA,CD8,CD4,CD3,PD-1,CD11c,CD68,CD45,Fibronectin,Pan-AKT,BCL6,BCLXL,BAD,p53,CD163,CD14,CD34,CD45RO,STING,B7-H3,CD44,CD127 \
 
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_3_#_[0-9]_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/3_3/metrics/
 python -m cellevaluation --merge --embed_dir out/hkgmh3_74_20_3_3/ --h5ad_dir 'out/' --vis_label_data hkgmh3_74_20_label.csv \
         --processed_subset_dir hkgmh3_74_20/test --vis_name hkgmh3_74_20_3_3_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_3_3_mean_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics  --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics  --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/3_3/metrics/mean/
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --processed_subset_dir hkgmh3_74_20/test --figure_dir figures/hkgmh3_74_20/3_3/mean/ --merge \
         --embed_dir out/hkgmh3_74_20_3_3/ --vis_name hkgmh3_74_20_3_3_mean --visualize_expression --raw_subset_dir hkgmh3_74_20
@@ -82,12 +82,12 @@ python -m cellevaluation --visualize_image --vis_name hkgmh3_74_20_3_3_mean.h5ad
         --vis_protein PanCk,Ki-67,SMA,CD8,CD4,CD3,PD-1,CD11c,CD68,CD45,Fibronectin,Pan-AKT,BCL6,BCLXL,BAD,p53,CD163,CD14,CD34,CD45RO,STING,B7-H3,CD44,CD127 \
 
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_lin_[0-9]_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/lin/metrics/
 python -m cellevaluation --merge --embed_dir out/hkgmh3_74_20_lin/ --h5ad_dir 'out/' --vis_label_data hkgmh3_74_20_label.csv \
         --processed_subset_dir hkgmh3_74_20/test --vis_name hkgmh3_74_20_lin_mean --embed_to_h5ad
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --h5ad_dir 'out/' --vis_name_pattern 'hkgmh3_74_20_lin_mean_all.h5ad' \
-        --do_clustering_metrics --do_performance_metrics --sum_by_subgraph \
+        --do_clustering_metrics --do_performance_metrics --sum_by_graph \
         --performance_metrics --figure_dir figures/hkgmh3_74_20/lin/metrics/mean/
 python -m cellevaluation --vis_label_data hkgmh3_74_20_label.csv --processed_subset_dir hkgmh3_74_20/test --figure_dir figures/hkgmh3_74_20/lin/mean/ --merge \
         --embed_dir out/hkgmh3_74_20_lin/ --vis_name hkgmh3_74_20_lin_mean --visualize_expression --raw_subset_dir hkgmh3_74_20

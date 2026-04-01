@@ -208,6 +208,8 @@ Wether or not to do enrichment analysis for multiple pathway or tf databases. On
 Wether or not to calculate metrics.
 - `--figure_dir`:  
 Directory in which performance metrics are saved.
+- `--sum_by_graph`:  
+Wether or not 'vis_label_data' is label data or cell measurement data: ROI or Image is ID key for selection. Only used when no ground truth data for sc expression available -> cell expression predictions are summed per graph
 
 ## Visualizing Model runs
 
