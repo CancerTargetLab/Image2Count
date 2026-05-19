@@ -16,7 +16,12 @@ Use the file:
     GenePT_gene_protein_embedding_model_3_text.pickle
 and store it as:
     GenePT_embedding.pkl
-in src.utils.eva_kit
+in src/utils/eva_kit
+
+KRONOS requires marker_metadata.csv from huggingface
+    https://huggingface.co/MahmoodLab/KRONOS
+Download and place in:
+src/utils/kronos_kit
 
 """
 
@@ -35,6 +40,8 @@ def parse_args():
 def main(**args):
     
     model_path = os.path.join(os.getcwd(),"out","models")
+    if not os.path.exists():
+        os.makedirs(model_path)
 
     if args["model"] == "deepcell":
         from src.utils.download_utils.dct_download import dct_download
